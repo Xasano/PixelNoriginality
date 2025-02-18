@@ -1,0 +1,17 @@
+{
+  "name": "pixelnoriginality",
+  "version": "1.0.0",
+  "description": "React Project M2 MIAGE MBDS",
+  "main": "index.js",
+  "scripts": {
+    "start:client": "npm run dev --workspace=client",
+    "start:api": "npm start --workspace=api",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "author": "",
+  "license": "ISC"
+}
