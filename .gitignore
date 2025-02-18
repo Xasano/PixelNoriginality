@@ -21,3 +21,6 @@ cdk.out
 
 *.private.md
 .vscode/
+
+# Mongo data
+data/
