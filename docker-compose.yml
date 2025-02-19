@@ -1,0 +1,46 @@
+services:
+  mongodb-pixelnoriginality:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root #Modifier les accès si mise en production
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data:/data/db
+    networks:
+      - pixelnoriginality-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+  api-pixelnoriginality:
+    build: 
+      context: ./packages/api
+      dockerfile: dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - pixelnoriginality-network
+    depends_on:
+      mongodb-pixelnoriginality:
+        condition: service_healthy
+  frontend-pixelnoriginality:
+    build: 
+      context: ./packages/client
+      dockerfile: dockerfile
+    ports:
+      - "80:80"
+    networks:
+      - pixelnoriginality-network
+
+networks:
+  pixelnoriginality-network:
+    driver: bridge
+
+volumes:
+  data:
+
