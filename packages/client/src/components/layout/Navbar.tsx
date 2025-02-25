@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink } from "react-router";
+import { MdLogin } from "react-icons/md";
+import { FaUserPlus } from "react-icons/fa";
+
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -77,7 +80,17 @@ export const Navbar = () => {
             <p className="font-bold">PixelNoriginality</p>
           </NavLink>
         </div>
-        <div>
+        <div className="flex items-center space-x-4">
+          <NavLink to="/pages/login">
+            <button className="px-4 py-2 bg-blue-500 text-white rounded-md">
+              <MdLogin />
+            </button>
+          </NavLink>
+          <NavLink to="/pages/register">
+            <button className="px-4 py-2 bg-green-500 text-white rounded-md">
+              <FaUserPlus />
+            </button>
+          </NavLink>
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded-md"
             onClick={toggleTheme}
