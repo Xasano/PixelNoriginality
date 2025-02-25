@@ -1,7 +1,19 @@
-import express, { json } from "express";
 import cors from "cors";
-
+import express, { json } from "express";
+import mongoose from "mongoose";
 import { api } from "./api.js";
+
+import dotenv from "dotenv";
+dotenv.config();
+
+mongoose
+  .connect(process.env.MONGO_URL)
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => {
+    console.log(err);
+  });
 
 const app = express();
 const port = 8000;
