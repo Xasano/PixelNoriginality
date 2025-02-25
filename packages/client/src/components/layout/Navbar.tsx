@@ -81,12 +81,12 @@ export const Navbar = () => {
           </NavLink>
         </div>
         <div className="flex items-center space-x-4">
-          <NavLink to="/pages/login">
+          <NavLink to="/login">
             <button className="px-4 py-2 bg-blue-500 text-white rounded-md">
               <MdLogin />
             </button>
           </NavLink>
-          <NavLink to="/pages/register">
+          <NavLink to="/register">
             <button className="px-4 py-2 bg-green-500 text-white rounded-md">
               <FaUserPlus />
             </button>
