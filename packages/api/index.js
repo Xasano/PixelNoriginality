@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { json } from "express";
 import mongoose from "mongoose";
@@ -20,6 +21,7 @@ const port = 8000;
 
 app.use(cors()); //autorise le CORS
 app.use(json());
+app.use(cookieParser());
 
 app.use("/api", api);
 
