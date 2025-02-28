@@ -1,25 +1,33 @@
 import { useEffect, useState } from "react";
-import { NavLink } from "react-router";
-import { MdLogin } from "react-icons/md";
 import { FaUserPlus } from "react-icons/fa";
-
+import { MdLogin } from "react-icons/md";
+import { NavLink, useLocation } from "react-router";
 
 export const Navbar = () => {
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isHomePage, setIsHomePage] = useState(true);
 
+  // For the theme
   useEffect(() => {
-    // load theme from localStorage
     if (localStorage.theme === "dark" && "theme" in localStorage) {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
+  }, []);
+
+  // For the scroll effect
+  useEffect(() => {
+    setIsScrolled(false);
 
     const header = document.querySelector("#home-subtitle");
 
-    if (header) {
-      // If the subtitle exists, use the IntersectionObserver API
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 120);
+    };
+
+    if (header && location.pathname === "/") {
+      // Si le subtitle existe et qu'on est sur la page d'accueil, utiliser l'IntersectionObserver API
       const observer = new IntersectionObserver(
         ([entry]) => {
           setIsScrolled(!entry.isIntersecting);
@@ -33,22 +41,15 @@ export const Navbar = () => {
       observer.observe(header);
       return () => observer.disconnect();
     } else {
-      // If not, use the scroll event
-      setIsHomePage(false);
-      const handleScroll = () => {
-        setIsScrolled(window.scrollY > 120);
-      };
+      setTimeout(() => {
+        handleScroll();
+      }, 50);
 
-      // Vérifier la position initiale
-      handleScroll();
-
-      // Ajouter l'écouteur d'événement
       window.addEventListener("scroll", handleScroll);
 
-      // Nettoyer l'écouteur
       return () => window.removeEventListener("scroll", handleScroll);
     }
-  }, []);
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     document.documentElement.classList.toggle("dark");
@@ -74,7 +75,11 @@ export const Navbar = () => {
         <div
           className={`flex items-center ${
             isScrolled ? "transition-opacity duration-350" : ""
-          } ${isScrolled || !isHomePage ? "opacity-100" : "opacity-0"}`}
+          } ${
+            isScrolled || location.pathname !== "/"
+              ? "opacity-100"
+              : "opacity-0"
+          }`}
         >
           <NavLink to="/">
             <p className="font-bold">PixelNoriginality</p>
