@@ -9,10 +9,20 @@ export const Navbar = () => {
 
   // For the theme
   useEffect(() => {
-    if (localStorage.theme === "dark" && "theme" in localStorage) {
-      document.documentElement.classList.add("dark");
+    // Check if the "theme" key exists in localStorage
+    if ("theme" in localStorage) {
+      if (localStorage.theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     } else {
-      document.documentElement.classList.remove("dark");
+      // If there is no "theme" key in localStorage, check the user's device preference
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
     }
   }, []);
 
