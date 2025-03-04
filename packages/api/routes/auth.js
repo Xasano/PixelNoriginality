@@ -34,7 +34,7 @@ authRouter.post("/init", async (req, res, next) => {
       name,
       email,
       password: hashedPassword,
-      role: "admin"
+      role: "admin",
     });
 
     await admin.save();
@@ -43,7 +43,6 @@ authRouter.post("/init", async (req, res, next) => {
     next(err);
   }
 });
-
 
 authRouter.get("/me", authenticateToken, async (req, res, next) => {
   try {
@@ -196,70 +195,70 @@ authRouter.put("/password/:id", authenticateToken, async (req, res, next) => {
 });
 
 authRouter.post(
-    "/refresh",
-    authenticateRefreshToken,
-    async (req, res, next) => {
-      try {
-        const user = await User.findById(req.user.id);
-        if (user === null) {
-          throw new ApiErrorException(ApiError.UNAUTHORIZED, 401);
-        }
-
-        // Blacklist the old refresh token
-        const oldRefreshToken = req.cookies.refreshToken;
-        if (oldRefreshToken) {
-          addBlacklistedToken(oldRefreshToken);
-        }
-
-        user.lastConnection = new Date();
-        await user.save();
-
-        // Generate new tokens
-        const accessToken = generateAccessToken(user);
-        const refreshToken = generateRefreshToken(user);
-
-        // Set new cookies
-        res.cookie("accessToken", accessToken);
-        res.cookie("refreshToken", refreshToken, {
-          path: "/api/auth/refresh",
-        });
-        res.sendStatus(200);
-      } catch (err) {
-        next(err);
+  "/refresh",
+  authenticateRefreshToken,
+  async (req, res, next) => {
+    try {
+      const user = await User.findById(req.user.id);
+      if (user === null) {
+        throw new ApiErrorException(ApiError.UNAUTHORIZED, 401);
       }
+
+      // Blacklist the old refresh token
+      const oldRefreshToken = req.cookies.refreshToken;
+      if (oldRefreshToken) {
+        addBlacklistedToken(oldRefreshToken);
+      }
+
+      user.lastConnection = new Date();
+      await user.save();
+
+      // Generate new tokens
+      const accessToken = generateAccessToken(user);
+      const refreshToken = generateRefreshToken(user);
+
+      // Set new cookies
+      res.cookie("accessToken", accessToken);
+      res.cookie("refreshToken", refreshToken, {
+        path: "/api/auth/refresh",
+      });
+      res.sendStatus(200);
+    } catch (err) {
+      next(err);
     }
+  }
 );
 
 // Helper functions for token generation
 function generateAccessToken(user) {
   return jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        timestamp: new Date().getTime(),
-        uuid: crypto.randomUUID(),
-      },
-      process.env.ACCESS_TOKEN_SECRET,
-      {
-        expiresIn: "15m",
-      }
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      timestamp: new Date().getTime(),
+      uuid: crypto.randomUUID(),
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: "15m",
+    }
   );
 }
 
 function generateRefreshToken(user) {
   return jwt.sign(
-      {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        timestamp: new Date().getTime(),
-        uuid: crypto.randomUUID(),
-      },
-      process.env.REFRESH_TOKEN_SECRET,
-      {
-        expiresIn: "7d",
-      }
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+      timestamp: new Date().getTime(),
+      uuid: crypto.randomUUID(),
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    {
+      expiresIn: "7d",
+    }
   );
 }
 
