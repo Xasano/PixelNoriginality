@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router";
-import { FaEdit, FaTrash, FaTimes } from "react-icons/fa";
+import { FaEdit, FaTrash, FaTimes, FaSort, FaSortUp, FaSortDown, FaTable, FaThLarge } from "react-icons/fa";
 import GridBGComponent from "../components/GridBGComponent";
 import axios from "axios";
 import { toast } from "react-toastify";
@@ -29,9 +29,24 @@ interface PixelBoard {
     };
     allowOverwriting: boolean;
     participationDelay: number;
-    pixels: Pixel[]; // Ajout de la liste des pixels
+    pixels: Pixel[];
+    participantCount?: number; // Pour compter les participants uniques
 }
 
+interface FilterState {
+    status: string;
+    title: string;
+    startDate: string;
+    endDate: string;
+    minParticipants: string;
+    maxParticipants: string;
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+    page: number;
+    limit: number;
+}
+
+// Modal de confirmation pour la suppression
 const ConfirmationModal: React.FC<{
     isOpen: boolean;
     onClose: () => void;
@@ -75,15 +90,8 @@ const ConfirmationModal: React.FC<{
     );
 };
 
-// Composant pour afficher la prévisualisation du PixelBoard avec ses pixels
+// Composant de prévisualisation
 const PixelBoardPreview: React.FC<{ board: PixelBoard }> = ({ board }) => {
-    // Calculer la taille des cellules en fonction des dimensions du tableau
-    const maxPreviewSize = 160; // Hauteur de la prévisualisation (h-40 = 160px)
-    const cellSize = Math.min(
-        maxPreviewSize / board.width,
-        maxPreviewSize / board.height
-    );
-
     return (
         <div
             className="h-40 w-full bg-gray-100 dark:bg-gray-900 relative overflow-hidden"
@@ -105,7 +113,6 @@ const PixelBoardPreview: React.FC<{ board: PixelBoard }> = ({ board }) => {
 
             {/* Grille des pixels */}
             <div className="absolute inset-0">
-                {/* On n'affiche que si le tableau a des pixels */}
                 {board.pixels && board.pixels.length > 0 && (
                     <div className="relative w-full h-full">
                         {board.pixels.map((pixel, index) => (
@@ -137,8 +144,14 @@ const PixelBoardList: React.FC = () => {
     const [isAdmin, setIsAdmin] = useState(false);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [pixelBoardToDelete, setPixelBoardToDelete] = useState<string | null>(null);
-    const [filters, setFilters] = useState({
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [filters, setFilters] = useState<FilterState>({
         status: "",
+        title: "",
+        startDate: "",
+        endDate: "",
+        minParticipants: "",
+        maxParticipants: "",
         sortBy: "creationDate",
         sortOrder: "desc",
         page: 1,
@@ -146,6 +159,7 @@ const PixelBoardList: React.FC = () => {
     });
     const [totalPages, setTotalPages] = useState(1);
 
+    // Vérifie si l'utilisateur est admin
     useEffect(() => {
         const checkAdminStatus = async () => {
             try {
@@ -153,7 +167,13 @@ const PixelBoardList: React.FC = () => {
                     withCredentials: true,
                     headers: { 'Accept': 'application/json' }
                 });
-                setIsAdmin(response.data.role === "admin");
+                const isUserAdmin = response.data.role === "admin";
+                setIsAdmin(isUserAdmin);
+
+                // Si l'utilisateur est admin, afficher la vue tableau par défaut
+                if (isUserAdmin) {
+                    setViewMode('table');
+                }
             } catch (err) {
                 console.error("Erreur de vérification du statut admin:", err);
             }
@@ -162,6 +182,7 @@ const PixelBoardList: React.FC = () => {
         checkAdminStatus();
     }, []);
 
+    // Charger les PixelBoards avec leur nombre de participants
     useEffect(() => {
         const fetchPixelBoards = async () => {
             try {
@@ -184,25 +205,78 @@ const PixelBoardList: React.FC = () => {
                     headers: { 'Accept': 'application/json' }
                 });
 
-                // Récupérer les données avec les pixels pour chaque PixelBoard
-                const boardsWithPixels = await Promise.all(
+                // Récupérer les détails et statistiques pour chaque PixelBoard
+                const boardsWithDetails = await Promise.all(
                     (response.data.data || []).map(async (board: PixelBoard) => {
                         try {
-                            // Récupérer les détails complets de chaque PixelBoard, y compris les pixels
+                            // Récupérer les détails complets
                             const boardResponse = await axios.get(`${API_BASE_URL}/pixel-boards/${board._id}`, {
                                 withCredentials: true,
                                 headers: { 'Accept': 'application/json' }
                             });
-                            return boardResponse.data;
+
+                            // Récupérer les statistiques pour obtenir le nombre de participants
+                            const statsResponse = await axios.get(`${API_BASE_URL}/pixel-boards/${board._id}/stats`, {
+                                withCredentials: true,
+                                headers: { 'Accept': 'application/json' }
+                            });
+
+                            return {
+                                ...boardResponse.data,
+                                participantCount: statsResponse.data.contributorCount || 0
+                            };
                         } catch (err) {
                             console.error(`Erreur lors de la récupération des détails pour ${board._id}:`, err);
-                            // Retourner le board sans pixels si on ne peut pas récupérer les détails
-                            return { ...board, pixels: [] };
+                            return { ...board, pixels: [], participantCount: 0 };
                         }
                     })
                 );
 
-                setPixelBoards(boardsWithPixels);
+                // Filtrage côté client
+                let filteredBoards = boardsWithDetails;
+                // Filtre par titre
+                if (filters.title) {
+                    const searchTerm = filters.title.toLowerCase();
+                    filteredBoards = filteredBoards.filter(board =>
+                        board.title.toLowerCase().includes(searchTerm)
+                    );
+                }
+                // Filtre par date de début
+                if (filters.startDate) {
+                    const startDate = new Date(filters.startDate);
+                    startDate.setHours(0, 0, 0, 0);
+                    filteredBoards = filteredBoards.filter(board =>
+                        new Date(board.creationDate) >= startDate
+                    );
+                }
+                // Filtre par date de fin
+                if (filters.endDate) {
+                    const endDate = new Date(filters.endDate);
+                    endDate.setHours(23, 59, 59, 999);
+                    filteredBoards = filteredBoards.filter(board =>
+                        new Date(board.creationDate) <= endDate
+                    );
+                }
+                // Filtre par nombre minimum de participants
+                if (filters.minParticipants) {
+                    const min = parseInt(filters.minParticipants);
+                    if (!isNaN(min)) {
+                        filteredBoards = filteredBoards.filter(board =>
+                            (board.participantCount || 0) >= min
+                        );
+                    }
+                }
+                // Filtre par nombre maximum de participants
+                if (filters.maxParticipants) {
+                    const max = parseInt(filters.maxParticipants);
+                    if (!isNaN(max)) {
+                        filteredBoards = filteredBoards.filter(board =>
+                            (board.participantCount || 0) <= max
+                        );
+                    }
+                }
+
+                setPixelBoards(filteredBoards);
                 setTotalPages(response.data.pagination?.pages || 1);
             } catch (err) {
                 console.error("Erreur lors du chargement des PixelBoards:", err);
@@ -223,12 +297,9 @@ const PixelBoardList: React.FC = () => {
             await axios.delete(`${API_BASE_URL}/pixel-boards/${pixelBoardToDelete}`, {
                 withCredentials: true
             });
-
             setPixelBoards(prev => prev.filter(board => board._id !== pixelBoardToDelete));
-
             setDeleteModalOpen(false);
             setPixelBoardToDelete(null);
-
             toast.success('PixelBoard supprimé avec succès');
         } catch (err) {
             console.error("Erreur lors de la suppression:", err);
@@ -244,25 +315,12 @@ const PixelBoardList: React.FC = () => {
     const formatDate = (dateString: string) =>
         new Date(dateString).toLocaleDateString();
 
-    const getRemainingTime = (endDate: string) => {
-        const end = new Date(endDate).getTime();
-        const now = Date.now();
-        const diff = end - now;
-
-        if (diff <= 0) return "Terminé";
-
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-        return `${days}j ${hours}h`;
-    };
-
-    const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFilters(prev => ({
             ...prev,
             [name]: value,
-            page: 1
+            page: 1 // Réinitialise la page lors d'un changement de filtre
         }));
     };
 
@@ -272,88 +330,209 @@ const PixelBoardList: React.FC = () => {
         }
     };
 
+    const handleSort = (field: string) => {
+        setFilters(prev => ({
+            ...prev,
+            sortBy: field,
+            sortOrder: prev.sortBy === field && prev.sortOrder === "asc" ? "desc" : "asc",
+            page: 1
+        }));
+    };
+
+    const getSortIcon = (field: string) => {
+        if (filters.sortBy !== field) {
+            return <FaSort className="inline ml-1" />;
+        }
+        return filters.sortOrder === "asc" ? <FaSortUp className="inline ml-1" /> : <FaSortDown className="inline ml-1" />;
+    };
+
+    const resetFilters = () => {
+        setFilters({
+            status: "",
+            title: "",
+            startDate: "",
+            endDate: "",
+            minParticipants: "",
+            maxParticipants: "",
+            sortBy: "creationDate",
+            sortOrder: "desc",
+            page: 1,
+            limit: 10
+        });
+    };
+
+    const getStatusBadge = (status: string) => {
+        switch(status) {
+            case 'active':
+                return <span className="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">En cours</span>;
+            case 'completed':
+                return <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">Terminé</span>;
+            default:
+                return <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Brouillon</span>;
+        }
+    };
+
     return (
         <>
             <GridBGComponent>
                 <div className="container mx-auto py-16 px-4">
-                    <div className="max-w-5xl mx-auto">
+                    <div className="max-w-6xl mx-auto">
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-3xl font-bold dark:text-white">PixelBoards</h1>
-                            {isAdmin && (
-                                <button
-                                    onClick={() => navigate("/pixel-boards/create")}
-                                    className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
-                                >
-                                    Créer un PixelBoard
-                                </button>
-                            )}
+                            <div className="flex space-x-4">
+                                {isAdmin && (
+                                    <div className="flex space-x-2 mr-4">
+                                        <button
+                                            onClick={() => setViewMode('grid')}
+                                            className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                            title="Vue grille"
+                                        >
+                                            <FaThLarge />
+                                        </button>
+                                        <button
+                                            onClick={() => setViewMode('table')}
+                                            className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                            title="Vue tableau"
+                                        >
+                                            <FaTable />
+                                        </button>
+                                    </div>
+                                )}
+                                {isAdmin && (
+                                    <button
+                                        onClick={() => navigate("/pixel-boards/create")}
+                                        className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
+                                    >
+                                        Créer un PixelBoard
+                                    </button>
+                                )}
+                            </div>
                         </div>
-
                         {error && (
                             <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-md dark:bg-red-900 dark:text-red-200">
                                 {error}
                             </div>
                         )}
-
-                        <div className="flex flex-wrap gap-4 mb-6 bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm">
-                            <div>
-                                <label
-                                    htmlFor="status"
-                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                        {/* Filtres */}
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm mb-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-lg font-medium dark:text-white">Filtres</h2>
+                                <button
+                                    onClick={resetFilters}
+                                    className="text-blue-500 hover:text-blue-700 dark:text-blue-400 text-sm"
                                 >
-                                    Statut
-                                </label>
-                                <select
-                                    id="status"
-                                    name="status"
-                                    value={filters.status}
-                                    onChange={handleFilterChange}
-                                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                >
-                                    <option value="">Tous</option>
-                                    <option value="draft">Brouillon</option>
-                                    <option value="active">En cours</option>
-                                    <option value="completed">Terminé</option>
-                                </select>
+                                    Réinitialiser
+                                </button>
                             </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+                                {/* Filtre par statut */}
+                                <div>
+                                    <label
+                                        htmlFor="status"
+                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >
+                                        Statut
+                                    </label>
+                                    <select
+                                        id="status"
+                                        name="status"
+                                        value={filters.status}
+                                        onChange={handleFilterChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    >
+                                        <option value="">Tous</option>
+                                        <option value="draft">Brouillon</option>
+                                        <option value="active">En cours</option>
+                                        <option value="completed">Terminé</option>
+                                    </select>
+                                </div>
 
-                            <div>
-                                <label
-                                    htmlFor="sortBy"
-                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                >
-                                    Trier par
-                                </label>
-                                <select
-                                    id="sortBy"
-                                    name="sortBy"
-                                    value={filters.sortBy}
-                                    onChange={handleFilterChange}
-                                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                >
-                                    <option value="creationDate">Date de création</option>
-                                    <option value="endDate">Date de fin</option>
-                                    <option value="title">Titre</option>
-                                </select>
-                            </div>
+                                {/* Filtre par titre */}
+                                <div>
+                                    <label
+                                        htmlFor="title"
+                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >
+                                        Titre
+                                    </label>
+                                    <input
+                                        type="text"
+                                        id="title"
+                                        name="title"
+                                        value={filters.title}
+                                        onChange={handleFilterChange}
+                                        placeholder="Rechercher..."
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
 
-                            <div>
-                                <label
-                                    htmlFor="sortOrder"
-                                    className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                >
-                                    Ordre
-                                </label>
-                                <select
-                                    id="sortOrder"
-                                    name="sortOrder"
-                                    value={filters.sortOrder}
-                                    onChange={handleFilterChange}
-                                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                >
-                                    <option value="desc">Décroissant</option>
-                                    <option value="asc">Croissant</option>
-                                </select>
+                                {/* Filtre par date de début */}
+                                <div>
+                                    <label
+                                        htmlFor="startDate"
+                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >
+                                        Date début
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="startDate"
+                                        name="startDate"
+                                        value={filters.startDate}
+                                        onChange={handleFilterChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+
+                                {/* Filtre par date de fin */}
+                                <div>
+                                    <label
+                                        htmlFor="endDate"
+                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >
+                                        Date fin
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="endDate"
+                                        name="endDate"
+                                        value={filters.endDate}
+                                        onChange={handleFilterChange}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    />
+                                </div>
+
+                                {/* Filtres par nombre de participants */}
+                                <div>
+                                    <label
+                                        htmlFor="minParticipants"
+                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                    >
+                                        Participants
+                                    </label>
+                                    <div className="flex space-x-2">
+                                        <input
+                                            type="number"
+                                            id="minParticipants"
+                                            name="minParticipants"
+                                            value={filters.minParticipants}
+                                            onChange={handleFilterChange}
+                                            placeholder="Min"
+                                            min="0"
+                                            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        />
+                                        <input
+                                            type="number"
+                                            id="maxParticipants"
+                                            name="maxParticipants"
+                                            value={filters.maxParticipants}
+                                            onChange={handleFilterChange}
+                                            placeholder="Max"
+                                            min="0"
+                                            className="w-1/2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -367,7 +546,8 @@ const PixelBoardList: React.FC = () => {
                                     Aucun PixelBoard trouvé.
                                 </p>
                             </div>
-                        ) : (
+                        ) : viewMode === 'grid' ? (
+                            // Vue Grille
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {pixelBoards.map((board) => (
                                     <div
@@ -400,7 +580,6 @@ const PixelBoardList: React.FC = () => {
                                         )}
 
                                         <NavLink to={`/pixel-boards/${board._id}`} className="block">
-                                            {/* Utiliser le composant PixelBoardPreview pour afficher la prévisualisation avec pixels */}
                                             <PixelBoardPreview board={board} />
 
                                             <div className="p-4">
@@ -410,13 +589,121 @@ const PixelBoardList: React.FC = () => {
                                                 <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
                                                     <p>Dimensions: {board.width}×{board.height}</p>
                                                     <p>Créé par: {board.author?.name || "Inconnu"}</p>
-                                                    <p>Temps restant: {getRemainingTime(board.endDate)}</p>
-                                                    <p>Pixels placés: {board.pixels?.length || 0}</p>
+                                                    <p>Date: {formatDate(board.creationDate)}</p>
+                                                    <p>Participants: {board.participantCount || 0}</p>
                                                 </div>
                                             </div>
                                         </NavLink>
                                     </div>
                                 ))}
+                            </div>
+                        ) : (
+                            // Vue Tableau pour l'admin
+                            <div className="overflow-x-auto">
+                                <table className="w-full bg-white dark:bg-gray-800 rounded-lg shadow">
+                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th
+                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort("_id")}
+                                        >
+                                            ID {getSortIcon("_id")}
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort("title")}
+                                        >
+                                            Titre {getSortIcon("title")}
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort("status")}
+                                        >
+                                            Statut {getSortIcon("status")}
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort("creationDate")}
+                                        >
+                                            Création {getSortIcon("creationDate")}
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort("endDate")}
+                                        >
+                                            Fin {getSortIcon("endDate")}
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                        >
+                                            Auteur
+                                        </th>
+                                        <th
+                                            className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider cursor-pointer"
+                                            onClick={() => handleSort("participantCount")}
+                                        >
+                                            Participants {getSortIcon("participantCount")}
+                                        </th>
+                                        <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+                                    {pixelBoards.map((board) => (
+                                        <tr
+                                            key={board._id}
+                                            className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                                            onClick={() => navigate(`/pixel-boards/${board._id}`)}
+                                            style={{cursor: 'pointer'}}
+                                        >
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {board._id.substring(0, 6)}...
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                {board.title}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap">
+                                                {getStatusBadge(board.status)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {formatDate(board.creationDate)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {formatDate(board.endDate)}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                {board.author?.name || "Inconnu"}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                                                {board.participantCount || 0}
+                                            </td>
+                                            <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex justify-end space-x-2">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigate(`/pixel-boards/edit/${board._id}`);
+                                                        }}
+                                                        className="text-yellow-600 hover:text-yellow-900 dark:text-yellow-400 dark:hover:text-yellow-300"
+                                                        title="Modifier"
+                                                    >
+                                                        <FaEdit className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            confirmDelete(board._id);
+                                                        }}
+                                                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                                                        title="Supprimer"
+                                                    >
+                                                        <FaTrash className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
                             </div>
                         )}
 
@@ -431,8 +718,8 @@ const PixelBoardList: React.FC = () => {
                                         Précédent
                                     </button>
                                     <span className="px-3 py-1 bg-blue-500 text-white rounded-md">
-                                        {filters.page} / {totalPages}
-                                    </span>
+                                       {filters.page} / {totalPages}
+                                   </span>
                                     <button
                                         onClick={() => handlePageChange(filters.page + 1)}
                                         disabled={filters.page === totalPages}
