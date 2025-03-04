@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
 
 const Register = () => {
     const [email, setEmail] = useState("");
@@ -8,9 +9,9 @@ const Register = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [errors, setErrors] = useState<{ email?: string; username?: string; password?: string; confirmPassword?: string }>({});
     const [message, setMessage] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
 
     const navigate = useNavigate();
+    const { register, isLoading } = useAuth();
 
     // Validation des champs
     const validate = () => {
@@ -53,63 +54,33 @@ const Register = () => {
             return;
         }
 
-        setIsLoading(true);
         setErrors({});
         setMessage("");
 
         try {
-            const response = await fetch('http://localhost:8000/api/auth/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include',
-                body: JSON.stringify({
-                    name: username,
-                    email,
-                    password
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-
-                // Gestion des erreurs spécifiques retournées par l'API
-                if (errorData.error === "EMAIL_ALREADY_REGISTERED") {
-                    setErrors({ email: "Cet email est déjà utilisé." });
-                    return;
-                } else if (errorData.error === "USERNAME_ALREADY_TAKEN") {
-                    setErrors({ username: "Ce nom d'utilisateur est déjà pris." });
-                    return;
-                } else if (errorData.error === "INVALID_EMAIL_FORMAT") {
-                    setErrors({ email: "Format d'email invalide." });
-                    return;
-                } else if (errorData.error === "WEAK_PASSWORD") {
-                    setErrors({ password: "Mot de passe trop faible." });
-                    return;
-                }
-
-                throw new Error(errorData.message || "Erreur lors de l'inscription");
-            }
-
+            await register(username, email, password);
             setMessage("Inscription réussie ! Redirection...");
 
             // Redirection après inscription réussie
             setTimeout(() => {
                 navigate('/');
             }, 1500);
-
         } catch (error) {
             let errorMessage = "Une erreur est survenue lors de l'inscription";
             if (error instanceof Error) {
                 errorMessage = error.message;
             }
 
-            setErrors({
-                confirmPassword: errorMessage
-            });
-        } finally {
-            setIsLoading(false);
+            // Diriger l'erreur vers le bon champ
+            if (errorMessage.includes("email")) {
+                setErrors({ email: errorMessage });
+            } else if (errorMessage.includes("utilisateur")) {
+                setErrors({ username: errorMessage });
+            } else if (errorMessage.includes("mot de passe")) {
+                setErrors({ password: errorMessage });
+            } else {
+                setErrors({ confirmPassword: errorMessage });
+            }
         }
     };
 
@@ -117,7 +88,12 @@ const Register = () => {
         <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-black">
             <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-6 rounded shadow-md w-full max-w-sm">
                 <h2 className="text-2xl font-bold mb-4 dark:text-white">Inscription</h2>
-                {message && <p className="text-green-500 mb-4">{message}</p>}
+
+                {message && (
+                    <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md dark:bg-green-900 dark:text-green-200">
+                        {message}
+                    </div>
+                )}
 
                 {/* Champ Email */}
                 <div className="mb-4">
@@ -182,6 +158,19 @@ const Register = () => {
                     />
                     {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>}
                 </div>
+
+                {/* Lien vers la page de connexion */}
+                <div className="mt-2 mb-4 text-sm">
+                    <p className="text-gray-600 dark:text-gray-400">
+                        Déjà un compte ?
+
+                        <a href="/login"
+                        className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                        Se connecter
+                    </a>
+                </p>
+            </div>
 
                 {/* Bouton Register */}
                 <button
