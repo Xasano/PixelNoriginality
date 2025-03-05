@@ -205,6 +205,7 @@ function generateAccessToken(user) {
       {
         id: user._id,
         email: user.email,
+        role: user.role,
         timestamp: new Date().getTime(),
         uuid: crypto.randomUUID(),
       },
@@ -220,6 +221,7 @@ function generateRefreshToken(user) {
       {
         id: user._id,
         email: user.email,
+        role: user.role,
         timestamp: new Date().getTime(),
         uuid: crypto.randomUUID(),
       },
