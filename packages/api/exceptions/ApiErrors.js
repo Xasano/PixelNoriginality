@@ -6,7 +6,6 @@ export const ApiError = {
   EMAIL_ALREADY_REGISTERED: "EMAIL_ALREADY_REGISTERED",
   WEAK_PASSWORD: "WEAK_PASSWORD",
   WRONG_EMAIL_OR_PASSWORD: "WRONG_EMAIL_OR_PASSWORD",
-  FORBIDDEN: "FORBIDDEN",
 };
 
 export const ApiErrorDescription = {
@@ -17,7 +16,6 @@ export const ApiErrorDescription = {
   [ApiError.EMAIL_ALREADY_REGISTERED]: "Email is already registered",
   [ApiError.WEAK_PASSWORD]: "Password is too weak",
   [ApiError.WRONG_EMAIL_OR_PASSWORD]: "Email or password is incorrect",
-  [ApiError.FORBIDDEN]: "Accès forbiden",
 };
 
 export class ApiErrorException extends Error {
