@@ -26,7 +26,7 @@ function App() {
   }, []);
 
   return (
-    <div className="w-full">
+    <div className="w-full overflow-x-hidden">
       <section className="flex flex-col items-center dark:bg-black dark:text-white">
         <div className="w-full h-screen">
           <GridBGComponent>
