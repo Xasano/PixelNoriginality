@@ -7,6 +7,7 @@ export const ApiError = {
   WEAK_PASSWORD: "WEAK_PASSWORD",
   WRONG_EMAIL_OR_PASSWORD: "WRONG_EMAIL_OR_PASSWORD",
   FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
 };
 
 export const ApiErrorDescription = {
@@ -18,6 +19,7 @@ export const ApiErrorDescription = {
   [ApiError.WEAK_PASSWORD]: "Password is too weak",
   [ApiError.WRONG_EMAIL_OR_PASSWORD]: "Email or password is incorrect",
   [ApiError.FORBIDDEN]: "Accès forbiden",
+  [ApiError.NOT_FOUND]: "Resource not found",
 };
 
 export class ApiErrorException extends Error {
