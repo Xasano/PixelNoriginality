@@ -5,9 +5,9 @@ const userSchema = new Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   role: { type: String, required: true, default: "user" },
-  createAt: { type: Date, default: Date.now , immutable : true },
+  createdAt: { type: Date, default: Date.now , immutable : true },
   lastConnection: { type: Date, default: Date.now },
-  prefTheme: { type: String, default: "light" },
+  prefTheme: { type: String, default: undefined },
   stats : {
     pixelBoardsCreated: { type: Number, default: 0 },
     pixelBoardsParticipated: { type: Number, default: 0 },

@@ -1,3 +1,4 @@
+import { ApiError, ApiErrorException } from "../exceptions/ApiErrors.js";
 import { User } from "../models/User.js";
 import express from "express";
 
@@ -16,8 +17,7 @@ userRouter.get("/:id", async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
         if (user === null) {
-            res.sendStatus(404);
-            return;
+            throw new ApiErrorException(ApiError.NOT_FOUND, 404);
         }
         res.json(user);
     }
@@ -31,8 +31,7 @@ userRouter.put("/:id", async (req, res, next) => {
         const user = await User.findByIdAndUpdate(req
             .params.id, req.body, { new: true });
         if (user === null) {
-            res.sendStatus(404);
-            return;
+            throw new ApiErrorException(ApiError.NOT_FOUND, 404);
         }
         res.json(user);
     } catch (err) {
@@ -44,7 +43,7 @@ userRouter.delete("/:id", async (req, res, next) => {
     try {
         const user = await User.findByIdAndDelete(req.params.id);
         if (user === null) {
-            res.sendStatus(404);
+            throw new ApiErrorException(ApiError.NOT_FOUND, 404);
             return;
         }
         res.sendStatus(204);
