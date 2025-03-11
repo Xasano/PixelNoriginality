@@ -12,6 +12,39 @@ import { User } from "../models/User.js";
 
 const authRouter = express.Router();
 
+// route pour initialiser l'admin
+authRouter.post("/init", async (req, res, next) => {
+  try {
+    const { name, email, password, role, secretKey } = req.body;
+
+    // Vérifier la clé secrète (stockée dans les variables d'environnement)
+    if (secretKey !== process.env.INIT_SECRET_KEY) {
+      throw new ApiErrorException(ApiError.UNAUTHORIZED, 401);
+    }
+
+    // Vérifier si l'admin existe déjà
+    const adminExists = await User.findOne({ role: "admin" });
+    if (adminExists) {
+      return res.status(409).json({ message: "Un administrateur existe déjà" });
+    }
+
+    // Créer l'administrateur
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const admin = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role: "admin"
+    });
+
+    await admin.save();
+    res.status(201).json({ message: "Administrateur créé avec succès" });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 authRouter.get("/me", authenticateToken, async (req, res, next) => {
   try {
     const decoded = req.user;
@@ -132,68 +165,70 @@ authRouter.post("/logout", authenticateToken, async (req, res, next) => {
 });
 
 authRouter.post(
-  "/refresh",
-  authenticateRefreshToken,
-  async (req, res, next) => {
-    try {
-      const user = await User.findById(req.user.id);
-      if (user === null) {
-        throw new ApiErrorException(ApiError.UNAUTHORIZED, 401);
+    "/refresh",
+    authenticateRefreshToken,
+    async (req, res, next) => {
+      try {
+        const user = await User.findById(req.user.id);
+        if (user === null) {
+          throw new ApiErrorException(ApiError.UNAUTHORIZED, 401);
+        }
+
+        // Blacklist the old refresh token
+        const oldRefreshToken = req.cookies.refreshToken;
+        if (oldRefreshToken) {
+          addBlacklistedToken(oldRefreshToken);
+        }
+
+        user.lastConnection = new Date();
+        await user.save();
+
+        // Generate new tokens
+        const accessToken = generateAccessToken(user);
+        const refreshToken = generateRefreshToken(user);
+
+        // Set new cookies
+        res.cookie("accessToken", accessToken);
+        res.cookie("refreshToken", refreshToken, {
+          path: "/api/auth/refresh",
+        });
+        res.sendStatus(200);
+      } catch (err) {
+        next(err);
       }
-
-      // Blacklist the old refresh token
-      const oldRefreshToken = req.cookies.refreshToken;
-      if (oldRefreshToken) {
-        addBlacklistedToken(oldRefreshToken);
-      }
-
-      user.lastConnection = new Date();
-      await user.save();
-
-      // Generate new tokens
-      const accessToken = generateAccessToken(user);
-      const refreshToken = generateRefreshToken(user);
-
-      // Set new cookies
-      res.cookie("accessToken", accessToken);
-      res.cookie("refreshToken", refreshToken, {
-        path: "/api/auth/refresh",
-      });
-      res.sendStatus(200);
-    } catch (err) {
-      next(err);
     }
-  }
 );
 
 // Helper functions for token generation
 function generateAccessToken(user) {
   return jwt.sign(
-    {
-      id: user._id,
-      email: user.email,
-      timestamp: new Date().getTime(),
-      uuid: crypto.randomUUID(),
-    },
-    process.env.ACCESS_TOKEN_SECRET,
-    {
-      expiresIn: "15m",
-    }
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        timestamp: new Date().getTime(),
+        uuid: crypto.randomUUID(),
+      },
+      process.env.ACCESS_TOKEN_SECRET,
+      {
+        expiresIn: "15m",
+      }
   );
 }
 
 function generateRefreshToken(user) {
   return jwt.sign(
-    {
-      id: user._id,
-      email: user.email,
-      timestamp: new Date().getTime(),
-      uuid: crypto.randomUUID(),
-    },
-    process.env.REFRESH_TOKEN_SECRET,
-    {
-      expiresIn: "7d",
-    }
+      {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        timestamp: new Date().getTime(),
+        uuid: crypto.randomUUID(),
+      },
+      process.env.REFRESH_TOKEN_SECRET,
+      {
+        expiresIn: "7d",
+      }
   );
 }
 
