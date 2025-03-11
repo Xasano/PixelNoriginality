@@ -12,7 +12,7 @@ const userSchema = new Schema({
     pixelBoardsCreated: { type: Number, default: 0 },
     pixelBoardsParticipated: { type: Number, default: 0 },
     pixelPainted: { type: Number, default: 0 },
-    lastPixelTouched : { type: Date, default: Date.now }
+    lastPixelTouched : { type: Date, default: null }
   },
 });
 

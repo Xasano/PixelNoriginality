@@ -6,7 +6,7 @@ const userRouter = express.Router();
 userRouter.get("/", async (req, res, next) => {
     try {
         const users = await User.find();
-        res.json(users).sendStatus(200);
+        res.json(users);
     } catch (err) {
         next(err);
     }
@@ -19,19 +19,9 @@ userRouter.get("/:id", async (req, res, next) => {
             res.sendStatus(404);
             return;
         }
-        res.json(user).sendStatus(200);
+        res.json(user);
     }
     catch (err) {
-        next(err);
-    }
-});
-
-userRouter.post("/", async (req, res, next) => {
-    try {
-        const user = new User(req.body);
-        await user.save();
-        res.json(user).sendStatus(201);
-    } catch (err) {
         next(err);
     }
 });
@@ -44,7 +34,7 @@ userRouter.put("/:id", async (req, res, next) => {
             res.sendStatus(404);
             return;
         }
-        res.json(user).sendStatus(200);
+        res.json(user);
     } catch (err) {
         next(err);
     }
