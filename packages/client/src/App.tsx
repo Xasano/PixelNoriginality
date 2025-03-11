@@ -51,21 +51,21 @@ function App() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {/* Première ligne */}
           <div className="card bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
-            <img src={stats_profil} alt="Stat 1" className="w-full h-32 object-cover rounded-t-lg"/>
+            <img src={stats_profil} alt="Stat 1" className="w-full h-48 object-cover rounded-t-lg"/>
             <div className="flex justify-between p-4">
               <span className="text-xl font-bold">Nombre d'utilisateurs inscrit</span>
               <span className="text-lg text-right">{nbUsers || '0'}</span>
             </div>
           </div>
           <div className="card bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
-            <img src={stats_pixelboard} alt="Stat 2" className="w-full h-32 object-cover rounded-t-lg" />
+            <img src={stats_pixelboard} alt="Stat 2" className="w-full h-48 object-cover rounded-t-lg" />
             <div className="flex justify-between p-4">
               <span className="text-xl font-bold">Nombres de PixelBoard</span>
               <span className="text-lg text-right">{nbPixelBoards || '0'}</span>
             </div>
           </div>
           <div className="card bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
-            <img src={stats_pixels} alt="Stat 3" className="w-full h-32 object-cover rounded-t-lg" />
+            <img src={stats_pixels} alt="Stat 3" className="w-full h-48 object-cover rounded-t-lg" />
             <div className="flex justify-between p-4">
               <span className="text-xl font-bold">Nombre total de pixels placés</span>
               <span className="text-lg text-right">{nbPixels || '0'}</span>
