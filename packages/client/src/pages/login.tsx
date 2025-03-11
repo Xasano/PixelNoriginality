@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router";
+import { useAuth } from "../contexts/AuthContext";
 
 const Login = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
     const [message, setMessage] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
 
     const navigate = useNavigate();
     const location = useLocation();
+    const { login, isLoading } = useAuth();
 
     // Récupérer un message éventuel passé via location state
     const stateMessage = location.state?.message;
@@ -39,63 +40,26 @@ const Login = () => {
             return;
         }
 
-        setIsLoading(true);
         setErrors({});
         setMessage("");
 
         try {
-            const response = await fetch('http://localhost:8000/api/auth/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                credentials: 'include', // Pour inclure les cookies
-                body: JSON.stringify({ email, password })
-            });
-
-            // Récupérer les données de réponse même en cas d'erreur
-            const data = await response.json().catch(() => null);
-
-            if (!response.ok) {
-                // Traitement spécifique des erreurs d'API
-                if (data && data.error) {
-                    switch (data.error) {
-                        case "WRONG_EMAIL_OR_PASSWORD":
-                            throw new Error("Email ou mot de passe incorrect");
-                        case "UNAUTHORIZED":
-                            throw new Error("Non autorisé, veuillez vous reconnecter");
-                        default:
-                            throw new Error(data.message || "Échec de la connexion");
-                    }
-                }
-                throw new Error("Une erreur est survenue lors de la connexion");
-            }
-
+            await login(email, password);
             setMessage("Connexion réussie!");
 
             // Redirection après connexion réussie
             setTimeout(() => {
                 navigate(redirectPath);
             }, 800);
-
         } catch (error) {
             let errorMessage = "Une erreur est survenue";
             if (error instanceof Error) {
                 errorMessage = error.message;
             }
 
-            // Afficher l'erreur au bon endroit selon le contexte
-            if (errorMessage.includes("Email ou mot de passe")) {
-                setErrors({
-                    general: errorMessage
-                });
-            } else {
-                setErrors({
-                    general: errorMessage
-                });
-            }
-        } finally {
-            setIsLoading(false);
+            setErrors({
+                general: errorMessage
+            });
         }
     };
 
@@ -158,15 +122,14 @@ const Login = () => {
                 <div className="mt-2 mb-4 text-sm">
                     <p className="text-gray-600 dark:text-gray-400">
                         Pas encore de compte ?
-                        <a
-                            href="/register"
-                            className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                        >
-                            S'inscrire
-                        </a>
-                    </p>
-                </div>
 
+                        <a href="/register"
+                        className="ml-1 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                        >
+                        S'inscrire
+                    </a>
+                </p>
+        </div>
                 {/* Bouton Login */}
                 <button
                     type="submit"

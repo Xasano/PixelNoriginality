@@ -6,57 +6,15 @@ import { NavLink, useLocation, useNavigate } from "react-router";
 
 // URL de base de l'API
 const API_BASE_URL = 'http://localhost:8000/api';
+import { useAuth } from "../../contexts/AuthContext";
 
 export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState(null);
 
-  // Vérifier l'état d'authentification de l'utilisateur
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const response = await fetch(`${API_BASE_URL}/auth/me`, {
-          credentials: 'include',
-          headers: {
-            'Accept': 'application/json'
-          }
-        });
-
-        if (response.ok) {
-          try {
-            const userData = await response.json();
-            console.log("Données utilisateur complètes:", userData);
-            console.log("Rôle utilisateur:", userData.role);
-
-            setUser(userData);
-            setIsLoggedIn(true);
-            // Vérifier si l'utilisateur est administrateur
-            setIsAdmin(userData.role === "admin");
-            console.log("Utilisateur connecté:", userData);
-            console.log("isAdmin défini à:", userData.role === "admin");
-          } catch (error) {
-            console.error("Erreur de parsing JSON:", error);
-            setIsLoggedIn(false);
-            setIsAdmin(false);
-          }
-        } else {
-          console.log("Non authentifié:", response.status);
-          setIsLoggedIn(false);
-          setIsAdmin(false);
-          setUser(null);
-        }
-      } catch (error) {
-        console.error("Erreur lors de la vérification de l'authentification:", error);
-        // On maintient l'état actuel d'authentification
-      }
-    };
-
-    checkAuth();
-  }, [location.pathname]);
+  // Utiliser le contexte d'authentification
+  const { isLoggedIn, isAdmin, logout, user } = useAuth();
 
   // Pour le thème
   useEffect(() => {
@@ -119,21 +77,10 @@ export const Navbar = () => {
         : "light";
   };
 
+  // Fonction de déconnexion
   const handleLogout = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (response.ok) {
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setUser(null);
-        navigate('/');
-      } else {
-        console.error("Échec de la déconnexion");
-      }
+      await logout();
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
     }
