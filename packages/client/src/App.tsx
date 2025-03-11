@@ -1,9 +1,30 @@
+import React, { useEffect, useState } from "react";
 import GridBGComponent from "./components/GridBGComponent";
 import stats_profil from "./assets/stats_profil.png";
 import stats_pixelboard from "./assets/stats_pixelboard.png";
 import stats_pixels from "./assets/stats_pixels.png";
+import axios from "axios";
 
 function App() {
+
+  const [nbUsers, setNbUsers] = useState(0);
+  const [nbPixelBoards, setNbPixelBoards] = useState(0);
+  const [nbPixels, setNbPixels] = useState(0);
+
+  useEffect(() => {
+    // Remplacez l'URL par l'URL de votre API
+    axios.get("http://localhost:8000/api/stats/")
+      .then(response => {
+        setNbUsers(response.data.userCount);
+        setNbPixelBoards(response.data.pixelBoardCount);
+        setNbPixels(response.data.pixelCount);
+        console.log("Statistiques récupérées :", response.data);
+      })
+      .catch(error => {
+        console.error("Erreur lors de la récupération du nombre d'utilisateurs :", error);
+      });
+  }, []);
+
   return (
     <div className="w-full">
       <section className="flex flex-col items-center dark:bg-black dark:text-white">
@@ -33,21 +54,21 @@ function App() {
             <img src={stats_profil} alt="Stat 1" className="w-full h-32 object-cover rounded-t-lg"/>
             <div className="flex justify-between p-4">
               <span className="text-xl font-bold">Nombre d'utilisateurs inscrit</span>
-              <span className="text-lg text-right">Valeur</span>
+              <span className="text-lg text-right">{nbUsers || '0'}</span>
             </div>
           </div>
           <div className="card bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
             <img src={stats_pixelboard} alt="Stat 2" className="w-full h-32 object-cover rounded-t-lg" />
             <div className="flex justify-between p-4">
               <span className="text-xl font-bold">Nombres de PixelBoard</span>
-              <span className="text-lg text-right">Valeur</span>
+              <span className="text-lg text-right">{nbPixelBoards || '0'}</span>
             </div>
           </div>
           <div className="card bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md">
             <img src={stats_pixels} alt="Stat 3" className="w-full h-32 object-cover rounded-t-lg" />
             <div className="flex justify-between p-4">
               <span className="text-xl font-bold">Nombre total de pixels placés</span>
-              <span className="text-lg text-right">Valeur</span>
+              <span className="text-lg text-right">{nbPixels || '0'}</span>
             </div>
           </div>
         </div>
