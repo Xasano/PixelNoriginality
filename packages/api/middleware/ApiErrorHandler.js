@@ -1,6 +1,6 @@
 import { ApiErrorException } from "../exceptions/ApiErrors.js";
 
-export const apiErrorHandler = (err, req, res, next) => {
+export const apiErrorHandler = (err, _req, res, _next) => {
   // Si c'est une erreur API connue, on la traite spécifiquement
   if (err instanceof ApiErrorException) {
     return res.status(err.status).json({

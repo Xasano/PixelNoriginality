@@ -15,10 +15,9 @@ export interface PixelBoardFormData {
   participationDelay: number;
 }
 
-const CreatePixelBoardForm: React.FC<CreatePixelBoardFormProps> = ({
-  onSubmit,
-}) => {
+const CreatePixelBoardForm = (props: CreatePixelBoardFormProps) => {
   const navigate = useNavigate();
+  const { onSubmit } = props;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

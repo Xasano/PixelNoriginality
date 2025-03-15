@@ -10,7 +10,10 @@ export default [
     },
     languageOptions: { globals: globals.node },
     files: ["**/*.{js,jsx}"],
-    rules: { "prettier/prettier": "error" },
+    rules: {
+      "prettier/prettier": "error",
+      "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    },
   },
   pluginJs.configs.recommended,
 ];

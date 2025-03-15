@@ -210,6 +210,8 @@ export const Board = (props: BoardProps) => {
                 color: pixel.color,
                 x: pixel.x,
                 y: pixel.y,
+                placedBy: pixel.placedBy,
+                placedAt: pixel.placedAt,
               };
             }
           });

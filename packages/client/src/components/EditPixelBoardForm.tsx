@@ -37,6 +37,7 @@ const EditPixelBoardForm: React.FC<EditPixelBoardFormProps> = ({
         );
         setFormData(response.data);
       } catch (err) {
+        console.error(err);
         setError("Impossible de charger les données du PixelBoard");
       } finally {
         setLoading(false);
@@ -83,6 +84,7 @@ const EditPixelBoardForm: React.FC<EditPixelBoardFormProps> = ({
       try {
         await onSubmit(formData);
       } catch (err) {
+        console.error(err);
         setError("Échec de la mise à jour du PixelBoard");
       } finally {
         setLoading(false);

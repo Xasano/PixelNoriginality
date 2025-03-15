@@ -15,7 +15,7 @@ const authRouter = express.Router();
 // route pour initialiser l'admin
 authRouter.post("/init", async (req, res, next) => {
   try {
-    const { name, email, password, role, secretKey } = req.body;
+    const { name, email, password, secretKey } = req.body;
 
     // Vérifier la clé secrète (stockée dans les variables d'environnement)
     if (secretKey !== process.env.INIT_SECRET_KEY) {

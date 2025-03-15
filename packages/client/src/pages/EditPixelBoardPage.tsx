@@ -9,7 +9,6 @@ import { useNavigate, useParams } from "react-router";
 const EditPixelBoardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [currentUserId, setCurrentUserId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -23,9 +22,7 @@ const EditPixelBoardPage: React.FC = () => {
 
         if (response.data && response.data._id) {
           // Vérifier si l'utilisateur est admin ou l'auteur du PixelBoard
-          if (response.data.role === "admin") {
-            setCurrentUserId(response.data._id);
-          } else {
+          if (response.data.role !== "admin") {
             // Fetch les détails du PixelBoard pour vérifier l'authorship
             const pixelBoardResponse = await axios.get(
               `http://localhost:8000/api/pixel-boards/${id}`,
@@ -34,9 +31,7 @@ const EditPixelBoardPage: React.FC = () => {
               },
             );
 
-            if (pixelBoardResponse.data.author._id === response.data._id) {
-              setCurrentUserId(response.data._id);
-            } else {
+            if (pixelBoardResponse.data.author._id !== response.data._id) {
               // Rediriger si non autorisé
               navigate("/pixel-boards", {
                 state: {
@@ -54,6 +49,7 @@ const EditPixelBoardPage: React.FC = () => {
           });
         }
       } catch (err) {
+        console.error(err);
         // Rediriger vers la page de connexion si erreur d'authentification
         navigate("/login", {
           state: {
@@ -70,7 +66,7 @@ const EditPixelBoardPage: React.FC = () => {
 
   const handleEditPixelBoard = async (formData: PixelBoardFormData) => {
     try {
-      const response = await axios.put(
+      await axios.put(
         `http://localhost:8000/api/pixel-boards/${id}`,
         formData,
         {

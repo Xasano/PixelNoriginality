@@ -31,6 +31,7 @@ const CreatePixelBoardPage: React.FC = () => {
           });
         }
       } catch (err) {
+        console.error(err);
         // Rediriger vers la page de connexion si erreur d'authentification
         navigate("/login", {
           state: {

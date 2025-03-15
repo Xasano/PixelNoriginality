@@ -44,7 +44,6 @@ userRouter.delete("/:id", async (req, res, next) => {
     const user = await User.findByIdAndDelete(req.params.id);
     if (user === null) {
       throw new ApiErrorException(ApiError.NOT_FOUND, 404);
-      return;
     }
     res.sendStatus(204);
   } catch (err) {
