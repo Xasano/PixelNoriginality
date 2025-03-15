@@ -54,7 +54,7 @@ export const Navbar = () => {
         {
           threshold: 0,
           rootMargin: "-100px 0px 0px 0px",
-        }
+        },
       );
 
       observer.observe(header);

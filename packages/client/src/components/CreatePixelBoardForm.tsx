@@ -51,7 +51,7 @@ const CreatePixelBoardForm: React.FC<CreatePixelBoardFormProps> = ({
   }, [formData.endDate]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
 
@@ -113,7 +113,7 @@ const CreatePixelBoardForm: React.FC<CreatePixelBoardFormProps> = ({
 
       if (formData.participationDelay < 10) {
         throw new Error(
-          "Le délai minimum entre participations est de 10 secondes"
+          "Le délai minimum entre participations est de 10 secondes",
         );
       }
 
@@ -176,7 +176,7 @@ const CreatePixelBoardForm: React.FC<CreatePixelBoardFormProps> = ({
                   "linear-gradient(to right, rgba(128,128,128,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(128,128,128,0.1) 1px, transparent 1px)",
                 backgroundSize: `${Math.max(previewWidth / 20, 5)}px ${Math.max(
                   previewHeight / 20,
-                  5
+                  5,
                 )}px`,
               }}
             ></div>

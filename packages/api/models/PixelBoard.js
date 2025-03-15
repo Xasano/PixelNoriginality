@@ -69,7 +69,8 @@ pixelBoardSchema.methods.canUserPlacePixel = function (userId) {
 
   // Vérifier le délai depuis le dernier placement
   const userPixels = this.pixels.filter(
-    (pixel) => pixel.placedBy && pixel.placedBy.toString() === userId.toString()
+    (pixel) =>
+      pixel.placedBy && pixel.placedBy.toString() === userId.toString(),
   );
 
   if (userPixels.length > 0) {
@@ -84,7 +85,7 @@ pixelBoardSchema.methods.canUserPlacePixel = function (userId) {
 
     if (timeSinceLastPlacement < this.participationDelay) {
       const timeLeft = Math.ceil(
-        this.participationDelay - timeSinceLastPlacement
+        this.participationDelay - timeSinceLastPlacement,
       );
       return {
         canPlace: false,
@@ -106,7 +107,7 @@ pixelBoardSchema.methods.placePixel = function (x, y, color, userId) {
 
   // Vérifier si cette position est déjà occupée
   const existingPixelIndex = this.pixels.findIndex(
-    (pixel) => pixel.x === x && pixel.y === y
+    (pixel) => pixel.x === x && pixel.y === y,
   );
 
   if (existingPixelIndex >= 0) {
@@ -139,7 +140,7 @@ pixelBoardSchema.methods.getContributors = function () {
     ...new Set(
       this.pixels
         .filter((pixel) => pixel.placedBy)
-        .map((pixel) => pixel.placedBy.toString())
+        .map((pixel) => pixel.placedBy.toString()),
     ),
   ];
 

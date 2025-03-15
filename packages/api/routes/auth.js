@@ -226,7 +226,7 @@ authRouter.post(
     } catch (err) {
       next(err);
     }
-  }
+  },
 );
 
 // Helper functions for token generation
@@ -242,7 +242,7 @@ function generateAccessToken(user) {
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: "15m",
-    }
+    },
   );
 }
 
@@ -258,7 +258,7 @@ function generateRefreshToken(user) {
     process.env.REFRESH_TOKEN_SECRET,
     {
       expiresIn: "7d",
-    }
+    },
   );
 }
 

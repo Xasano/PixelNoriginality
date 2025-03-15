@@ -24,7 +24,7 @@ export interface Pixel {
 function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   delay: number,
-  options: { leading?: boolean; trailing?: boolean } = {}
+  options: { leading?: boolean; trailing?: boolean } = {},
 ): (...args: Parameters<T>) => void {
   const { leading = true, trailing = true } = options;
   let lastCallTime = 0;
@@ -434,10 +434,10 @@ export const Board = (props: BoardProps) => {
       const minX = Math.floor(-offsetRef.current.x / scaledPixelSize);
       const minY = Math.floor(-offsetRef.current.y / scaledPixelSize);
       const maxX = Math.ceil(
-        (newWidth - offsetRef.current.x) / scaledPixelSize
+        (newWidth - offsetRef.current.x) / scaledPixelSize,
       );
       const maxY = Math.ceil(
-        (newHeight - offsetRef.current.y) / scaledPixelSize
+        (newHeight - offsetRef.current.y) / scaledPixelSize,
       );
 
       // Mettre à jour l'état du viewport
@@ -558,10 +558,10 @@ export const Board = (props: BoardProps) => {
 
     // Conversion en coordonnées de pixel
     const pixelX = Math.floor(
-      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current)
+      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current),
     );
     const pixelY = Math.floor(
-      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current)
+      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current),
     );
 
     // Vérifier si le pixel est dans les limites du tableau
@@ -572,7 +572,7 @@ export const Board = (props: BoardProps) => {
       pixelY >= props.height
     ) {
       console.log(
-        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`
+        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
       );
       return;
     }
@@ -622,10 +622,10 @@ export const Board = (props: BoardProps) => {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-        }
+        },
       );
       console.log(
-        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`
+        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
       );
 
       return newData;
@@ -780,7 +780,7 @@ export const Board = (props: BoardProps) => {
             colorGroups[pixel.color] = [];
           }
           colorGroups[pixel.color].push(
-            `<rect x="${pixel.x}" y="${pixel.y}" width="1" height="1"/>`
+            `<rect x="${pixel.x}" y="${pixel.y}" width="1" height="1"/>`,
           );
         }
 
