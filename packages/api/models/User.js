@@ -9,7 +9,6 @@ const userSchema = new Schema({
   lastConnection: { type: Date, default: Date.now },
   prefTheme: { type: String, default: undefined },
   stats : {
-    pixelBoardsCreated: { type: Number, default: 0 },
     pixelBoardsParticipated: { type: Number, default: 0 },
     pixelPainted: { type: Number, default: 0 },
     lastPixelTouched : { type: Date, default: null }

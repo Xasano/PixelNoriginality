@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { User } from '../model/User';
 
 const API_BASE_URL = 'http://localhost:8000/api';
 
@@ -129,18 +130,18 @@ class AuthService {
     }
 
     // Obtenir l'utilisateur courant
-    static async getCurrentUser() {
+    static async getCurrentUser() : Promise<User | undefined> {
         try {
             const response = await axios.get(`${API_BASE_URL}/auth/me`);
-            return response.data;
+            return response.data as User;
         } catch (error) {
             // Si erreur 401 (non autorisé), l'utilisateur n'est pas connecté
             if (axios.isAxiosError(error) && error.response?.status === 401) {
-                return null;
+                return undefined;
             }
             // Logguer d'autres types d'erreurs pour le débogage
             console.error("Erreur lors de la récupération de l'utilisateur:", error);
-            return null;
+            return undefined;
         }
     }
 
