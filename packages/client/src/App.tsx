@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import GridBGComponent from "./components/GridBGComponent";
 import { FaUser, FaThLarge, FaPaintBrush } from "react-icons/fa";
 import axios from "axios";
+import ActivePixelBoards3DCarousel from "./components/ActivePixelBoardsCarousel";
 
 function App() {
   const [stats, setStats] = useState({
@@ -19,18 +20,18 @@ function App() {
       const minFrames = 30;
       const frameCount = Math.max(minFrames, Math.min(duration / 10, 200));
       let currentFrame = 0;
-      
+
       const animate = () => {
         currentFrame++;
         const progress = currentFrame / frameCount;
         const value = Math.floor(start + range * progress);
         setter(value);
-        
+
         if (currentFrame < frameCount) {
           requestAnimationFrame(animate);
         }
       };
-      
+
       requestAnimationFrame(animate);
     };
 
@@ -43,15 +44,15 @@ function App() {
           nbPixelBoards: 0,
           nbPixels: 0
         });
-        
+
         setTimeout(() => {
-          animateValue(0, response.data.userCount, 1000, (val) => 
+          animateValue(0, response.data.userCount, 1000, (val) =>
             setStats(prev => ({ ...prev, nbUsers: val }))
           );
-          animateValue(0, response.data.pixelBoardCount, 1500, (val) => 
+          animateValue(0, response.data.pixelBoardCount, 1500, (val) =>
             setStats(prev => ({ ...prev, nbPixelBoards: val }))
           );
-          animateValue(0, response.data.pixelCount, 2000, (val) => 
+          animateValue(0, response.data.pixelCount, 2000, (val) =>
             setStats(prev => ({ ...prev, nbPixels: val }))
           );
         }, 300);
@@ -154,6 +155,11 @@ function App() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* Section PixelBoards actifs - ajoutée */}
+      <section className="w-full max-w-screen-xl mx-auto px-6 py-12">
+        <ActivePixelBoards3DCarousel />
       </section>
     </div>
   );
