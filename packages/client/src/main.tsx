@@ -1,4 +1,3 @@
-// src/main.tsx
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -25,9 +24,10 @@ createRoot(document.getElementById("root")!).render(
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/pixel-boards" element={<PixelBoardList />} />
-                <Route path="/pixel-boards/active" element={<ActivePixelBoardsPage />} />
-                <Route path="/pixel-boards/create" element={<CreatePixelBoardPage />} />
-                <Route path="/pixel-boards/edit/:id" element={<EditPixelBoardPage />} />
+                <Route path="/pixel-boards" element={<ProtectedRoute element={<PixelBoardList />} roles={['admin', 'user']} />} />
+                <Route path="/pixel-boards/create" element={<ProtectedRoute element={<CreatePixelBoardPage />} roles={['admin']} />} />
+                <Route path="/pixel-boards/active" element={<ProtectedRoute element={<ActivePixelBoardsPage />} roles={['admin', 'user']} />} />
+                 <Route path="/pixel-boards/edit/:id" element={<ProtectedRoute element={<EditPixelBoardPage />} roles={['admin']} />} />
                  <Route path="/unauthorized" element={<Unauthorized />} />
                       </Routes>
                 </div>
