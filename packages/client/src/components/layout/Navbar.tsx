@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaUserPlus, FaPlusCircle, FaCog } from "react-icons/fa";
+import { FaUserPlus, FaPlusCircle, FaCog, FaUser } from "react-icons/fa";
 import { MdLogin, MdLogout } from "react-icons/md";
 import { BsMoonFill, BsSunFill } from "react-icons/bs";
 import { NavLink, useLocation, useNavigate } from "react-router";
@@ -100,6 +100,9 @@ export const Navbar = () => {
     setIsDarkTheme(!isDarkTheme);
   };
 
+  // Vérifier si on est sur la page de profil
+  const isProfilePage = location.pathname === "/me";
+
   return (
     <div className="fixed top-0 left-0 right-0 z-20 flex justify-center">
       <nav
@@ -160,13 +163,26 @@ export const Navbar = () => {
 
           {isLoggedIn ? (
             // Utilisateur connecté
-            <button
-              className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-              onClick={handleLogout}
-              title="Se déconnecter"
-            >
-              <MdLogout />
-            </button>
+            <>
+              {/* Bouton pour accéder au profil - ne pas afficher si on est déjà sur /me */}
+              {!isProfilePage && (
+                <NavLink to="/me">
+                  <button
+                    className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600"
+                    title="Mon profil"
+                  >
+                    <FaUser />
+                  </button>
+                </NavLink>
+              )}
+              <button
+                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                onClick={handleLogout}
+                title="Se déconnecter"
+              >
+                <MdLogout />
+              </button>
+            </>
           ) : (
             // Utilisateur non connecté
             <>
