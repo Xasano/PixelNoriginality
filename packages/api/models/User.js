@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import ThemeEnum from "./themeEnum";
 
 const userSchema = new Schema({
   name: { type: String, required: true, unique: true },
@@ -8,7 +9,7 @@ const userSchema = new Schema({
   role: { type: String, required: true, default: "user" },
   createdAt: { type: Date, default: Date.now , immutable : true },
   lastConnection: { type: Date, default: Date.now },
-  prefTheme: { type: String, default: undefined },
+  prefTheme: { type: ThemeEnum, default: undefined },
   stats : {
     pixelBoardsParticipated: { type: Number, default: 0 },
     pixelPainted: { type: Number, default: 0 },
