@@ -134,7 +134,7 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
         </div>
       </div>
 
-      {/* ✅ Modal de Succès */}
+      {/* Modal de Succès */}
       {showSuccessModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6 text-center transition transform scale-95 opacity-0 animate-success-modal">
@@ -150,7 +150,7 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
         </div>
       )}
 
-      {/* ✅ Animation Tailwind */}
+      {/* Animation Tailwind */}
       <style>
         {`
           @keyframes fadeInScale {
