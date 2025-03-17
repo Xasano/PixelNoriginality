@@ -19,8 +19,8 @@ export const Navbar = () => {
   // Pour le thème
   useEffect(() => {
     // Check if the "theme" key exists in localStorage
-    if ("theme" in localStorage || user?.prefTheme) {
-      if (localStorage.theme === "dark" || user?.prefTheme === "dark") {
+    if ("theme" in localStorage) {
+      if (localStorage.theme === "dark") {
         document.documentElement.classList.add("dark");
       } else {
         document.documentElement.classList.remove("dark");
