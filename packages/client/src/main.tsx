@@ -10,6 +10,7 @@ import CreatePixelBoardPage from "./pages/CreatePixelBoardPage";
 import PixelBoardList from "./pages/PixelBoardList";
 import EditPixelBoardPage from "./pages/EditPixelBoardPage";
 import Unauthorized from "./pages/Unauthorized";
+import UserDetails from "./pages/UserDetails";
 
 import "./index.css";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -23,6 +24,7 @@ createRoot(document.getElementById("root")!).render(
                               <Route path="/" element={<App />} />
                               <Route path="/login" element={<Login />} />
                               <Route path="/register" element={<Register />} />
+                              <Route path="/me" element={<ProtectedRoute element={<UserDetails />} roles={['admin', 'user']} />} />
                               <Route path="/pixel-boards" element={<ProtectedRoute element={<PixelBoardList />} roles={['admin', 'user']} />} />
                               <Route path="/pixel-boards/create" element={<ProtectedRoute element={<CreatePixelBoardPage />} roles={['admin']} />} />
                               <Route path="/pixel-boards/edit/:id" element={<ProtectedRoute element={<EditPixelBoardPage />} roles={['admin']} />} />
