@@ -118,8 +118,8 @@ const UserActionButtons: React.FC<UserActionButtonsProps> = ({
             className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="bg-blue-500 dark:bg-gray-600 p-4">
-              <h2 className="text-white text-xl font-bold">Modifier mon profil</h2>
+            <div className="bg-blue-200 dark:bg-gray-600 p-4">
+              <h2 className="text-black dark:text-white text-xl font-bold">Modifier mon profil</h2>
             </div>
             
             <form onSubmit={handleSubmit} className="p-10">
