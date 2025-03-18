@@ -22,3 +22,53 @@
     );
   }
 }
+
+
+.carousel-container {
+  perspective: 1000px;
+}
+
+.carousel-3d-container {
+  transform-style: preserve-3d;
+}
+
+.carousel-card {
+  width: 85%;
+  max-width: 500px;
+  transition: all 0.7s ease;
+  cursor: pointer;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.card-center {
+  transform: translate(-50%, -50%) translateZ(150px) scale(1);
+  opacity: 1;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.card-left {
+  transform: translate(-90%, -50%) translateZ(0) rotateY(35deg) scale(0.9);
+  opacity: 0.9;
+  box-shadow: 8px 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.card-right {
+  transform: translate(-10%, -50%) translateZ(0) rotateY(-35deg) scale(0.9);
+  opacity: 0.9;
+  box-shadow: -8px 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+/* Animation et états interactifs */
+.carousel-card:hover {
+  transform-origin: center;
+}
+
+.card-center:hover {
+  transform: translate(-50%, -50%) translateZ(160px) scale(1.03);
+}
+
+.card-left:hover, .card-right:hover {
+  opacity: 1;
+}

@@ -46,6 +46,11 @@ interface FilterState {
     limit: number;
 }
 
+interface PixelBoardListProps {
+    showOnlyActive?: boolean;  // Pour filtrer uniquement les actifs
+    hideAdminFeatures?: boolean; // Pour masquer les fonctions d'admin
+}
+
 // Modal de confirmation pour la suppression
 const ConfirmationModal: React.FC<{
     isOpen: boolean;
@@ -136,7 +141,10 @@ const PixelBoardPreview: React.FC<{ board: PixelBoard }> = ({ board }) => {
     );
 };
 
-const PixelBoardList: React.FC = () => {
+const PixelBoardList: React.FC<PixelBoardListProps> = ({
+                                                           showOnlyActive = false,
+                                                           hideAdminFeatures = false
+                                                       }) => {
     const navigate = useNavigate();
     const [pixelBoards, setPixelBoards] = useState<PixelBoard[]>([]);
     const [loading, setLoading] = useState(true);
@@ -170,8 +178,8 @@ const PixelBoardList: React.FC = () => {
                 const isUserAdmin = response.data.role === "admin";
                 setIsAdmin(isUserAdmin);
 
-                // Si l'utilisateur est admin, afficher la vue tableau par défaut
-                if (isUserAdmin) {
+                // Si l'utilisateur est admin, afficher la vue tableau par défaut (sauf si on est en mode showOnlyActive)
+                if (isUserAdmin && !showOnlyActive) {
                     setViewMode('table');
                 }
             } catch (err) {
@@ -180,7 +188,7 @@ const PixelBoardList: React.FC = () => {
         };
 
         checkAdminStatus();
-    }, []);
+    }, [showOnlyActive]);
 
     // Charger les PixelBoards avec leur nombre de participants
     useEffect(() => {
@@ -196,7 +204,10 @@ const PixelBoardList: React.FC = () => {
                     sortOrder: filters.sortOrder
                 });
 
-                if (filters.status) {
+                // Si on doit afficher uniquement les actifs, on force le filtre
+                if (showOnlyActive) {
+                    queryParams.set("status", "active");
+                } else if (filters.status) {
                     queryParams.append("status", filters.status);
                 }
 
@@ -206,7 +217,7 @@ const PixelBoardList: React.FC = () => {
                 });
 
                 // Récupérer les détails et statistiques pour chaque PixelBoard
-                const boardsWithDetails = await Promise.all(
+                let boardsWithDetails = await Promise.all(
                     (response.data.data || []).map(async (board: PixelBoard) => {
                         try {
                             // Récupérer les détails complets
@@ -231,6 +242,14 @@ const PixelBoardList: React.FC = () => {
                         }
                     })
                 );
+
+                // Si on montre uniquement les actifs, filtrer ceux dont la date de fin est passée
+                if (showOnlyActive) {
+                    const now = new Date();
+                    boardsWithDetails = boardsWithDetails.filter(board =>
+                        board.status === 'active' && new Date(board.endDate) > now
+                    );
+                }
 
                 // Filtrage côté client
                 let filteredBoards = boardsWithDetails;
@@ -288,7 +307,7 @@ const PixelBoardList: React.FC = () => {
         };
 
         fetchPixelBoards();
-    }, [filters]);
+    }, [filters, showOnlyActive]);
 
     const handleDeletePixelBoard = async () => {
         if (!pixelBoardToDelete) return;
@@ -320,7 +339,7 @@ const PixelBoardList: React.FC = () => {
         setFilters(prev => ({
             ...prev,
             [name]: value,
-            page: 1 // Réinitialise la page lors d'un changement de filtre
+            page: 1
         }));
     };
 
@@ -348,7 +367,7 @@ const PixelBoardList: React.FC = () => {
 
     const resetFilters = () => {
         setFilters({
-            status: "",
+            status: showOnlyActive ? "active" : "",
             title: "",
             startDate: "",
             endDate: "",
@@ -378,33 +397,35 @@ const PixelBoardList: React.FC = () => {
                 <div className="container mx-auto py-16 px-4">
                     <div className="max-w-6xl mx-auto">
                         <div className="flex justify-between items-center mb-6">
-                            <h1 className="text-3xl font-bold dark:text-white">PixelBoards</h1>
+                            <h1 className="text-3xl font-bold dark:text-white">
+                                {showOnlyActive ? "PixelBoards en cours" : "PixelBoards"}
+                            </h1>
                             <div className="flex space-x-4">
-                                {isAdmin && (
-                                    <div className="flex space-x-2 mr-4">
+                                {isAdmin && !hideAdminFeatures && (
+                                    <>
+                                        <div className="flex space-x-2 mr-4">
+                                            <button
+                                                onClick={() => setViewMode('grid')}
+                                                className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                                title="Vue grille"
+                                            >
+                                                <FaThLarge />
+                                            </button>
+                                            <button
+                                                onClick={() => setViewMode('table')}
+                                                className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                                title="Vue tableau"
+                                            >
+                                                <FaTable />
+                                            </button>
+                                        </div>
                                         <button
-                                            onClick={() => setViewMode('grid')}
-                                            className={`p-2 rounded-md ${viewMode === 'grid' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
-                                            title="Vue grille"
+                                            onClick={() => navigate("/pixel-boards/create")}
+                                            className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
                                         >
-                                            <FaThLarge />
+                                            Créer un PixelBoard
                                         </button>
-                                        <button
-                                            onClick={() => setViewMode('table')}
-                                            className={`p-2 rounded-md ${viewMode === 'table' ? 'bg-blue-500 text-white' : 'bg-gray-200 dark:bg-gray-700'}`}
-                                            title="Vue tableau"
-                                        >
-                                            <FaTable />
-                                        </button>
-                                    </div>
-                                )}
-                                {isAdmin && (
-                                    <button
-                                        onClick={() => navigate("/pixel-boards/create")}
-                                        className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600 transition-colors"
-                                    >
-                                        Créer un PixelBoard
-                                    </button>
+                                    </>
                                 )}
                             </div>
                         </div>
@@ -413,7 +434,8 @@ const PixelBoardList: React.FC = () => {
                                 {error}
                             </div>
                         )}
-                        {/* Filtres */}
+
+                        {/* Filtres - toujours visibles, même pour les utilisateurs standard */}
                         <div className="bg-white dark:bg-gray-800 p-4 rounded-md shadow-sm mb-6">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-medium dark:text-white">Filtres</h2>
@@ -425,27 +447,29 @@ const PixelBoardList: React.FC = () => {
                                 </button>
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-                                {/* Filtre par statut */}
-                                <div>
-                                    <label
-                                        htmlFor="status"
-                                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-                                    >
-                                        Statut
-                                    </label>
-                                    <select
-                                        id="status"
-                                        name="status"
-                                        value={filters.status}
-                                        onChange={handleFilterChange}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                    >
-                                        <option value="">Tous</option>
-                                        <option value="draft">Brouillon</option>
-                                        <option value="active">En cours</option>
-                                        <option value="completed">Terminé</option>
-                                    </select>
-                                </div>
+                                {/* Filtre par statut - caché si showOnlyActive est true */}
+                                {!showOnlyActive && (
+                                    <div>
+                                        <label
+                                            htmlFor="status"
+                                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                                        >
+                                            Statut
+                                        </label>
+                                        <select
+                                            id="status"
+                                            name="status"
+                                            value={filters.status}
+                                            onChange={handleFilterChange}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        >
+                                            <option value="">Tous</option>
+                                            <option value="draft">Brouillon</option>
+                                            <option value="active">En cours</option>
+                                            <option value="completed">Terminé</option>
+                                        </select>
+                                    </div>
+                                )}
 
                                 {/* Filtre par titre */}
                                 <div>
@@ -542,19 +566,33 @@ const PixelBoardList: React.FC = () => {
                             </div>
                         ) : pixelBoards.length === 0 ? (
                             <div className="bg-white dark:bg-gray-800 rounded-md shadow-md p-8 text-center">
-                                <p className="text-lg text-gray-600 dark:text-gray-300">
-                                    Aucun PixelBoard trouvé.
-                                </p>
+                                <div className="flex flex-col items-center">
+                                    <svg
+                                        className="w-16 h-16 text-gray-400 mb-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                    <p className="text-gray-700 mb-2 font-medium dark:text-gray-300">
+                                        {showOnlyActive ? "Aucun PixelBoard actif" : "Aucun PixelBoard trouvé"}
+                                    </p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                                        {showOnlyActive ? "Revenez plus tard ou créez votre propre PixelBoard" : "Essayez de modifier vos filtres"}
+                                    </p>
+                                </div>
                             </div>
-                        ) : viewMode === 'grid' ? (
-                            // Vue Grille
+                        ) : viewMode === 'grid' || showOnlyActive ? (
+                            // Vue Grille (toujours utilisée si showOnlyActive est true)
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                 {pixelBoards.map((board) => (
                                     <div
                                         key={board._id}
-                                        className="relative bg-white dark:bg-gray-800 rounded-md shadow-md hover:shadow-lg transition-shadow overflow-hidden group"
+                                        className="relative bg-white dark:bg-gray-800 border border-transparent dark:border-black rounded-md shadow-md hover:shadow-lg transition-shadow overflow-hidden group"
                                     >
-                                        {isAdmin && (
+                                        {isAdmin && !hideAdminFeatures && (
                                             <div className="absolute top-2 right-2 z-10 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button
                                                     onClick={(e) => {
@@ -587,10 +625,22 @@ const PixelBoardList: React.FC = () => {
                                                     {board.title}
                                                 </h2>
                                                 <div className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                                                    <p>Dimensions: {board.width}×{board.height}</p>
-                                                    <p>Créé par: {board.author?.name || "Inconnu"}</p>
-                                                    <p>Date: {formatDate(board.creationDate)}</p>
-                                                    <p>Participants: {board.participantCount || 0}</p>
+                                                    <div className="flex justify-between">
+                                                        <p>Dimensions:</p>
+                                                        <p className="font-medium">{board.width}×{board.height}</p>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <p>Créé le:</p>
+                                                        <p className="font-medium">{formatDate(board.creationDate)}</p>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <p>Par:</p>
+                                                        <p className="font-medium">{board.author?.name || "Inconnu"}</p>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <p>Participants:</p>
+                                                        <p className="font-medium">{board.participantCount || 0}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </NavLink>
@@ -707,13 +757,14 @@ const PixelBoardList: React.FC = () => {
                             </div>
                         )}
 
+                        {/* Pagination */}
                         {totalPages > 1 && (
                             <div className="flex justify-center mt-6">
                                 <div className="flex space-x-2">
                                     <button
                                         onClick={() => handlePageChange(filters.page - 1)}
                                         disabled={filters.page === 1}
-                                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50"
+                                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 dark:text-white"
                                     >
                                         Précédent
                                     </button>
@@ -723,7 +774,7 @@ const PixelBoardList: React.FC = () => {
                                     <button
                                         onClick={() => handlePageChange(filters.page + 1)}
                                         disabled={filters.page === totalPages}
-                                        className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50"
+                                        className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md disabled:opacity-50 dark:text-white"
                                     >
                                         Suivant
                                     </button>
@@ -734,14 +785,17 @@ const PixelBoardList: React.FC = () => {
                 </div>
             </GridBGComponent>
 
-            <ConfirmationModal
-                isOpen={deleteModalOpen}
-                onClose={() => setDeleteModalOpen(false)}
-                onConfirm={handleDeletePixelBoard}
-                title={
-                    pixelBoards.find(b => b._id === pixelBoardToDelete)?.title || ''
-                }
-            />
+            {/* Modal de suppression seulement pour les admins si nécessaire */}
+            {isAdmin && !hideAdminFeatures && (
+                <ConfirmationModal
+                    isOpen={deleteModalOpen}
+                    onClose={() => setDeleteModalOpen(false)}
+                    onConfirm={handleDeletePixelBoard}
+                    title={
+                        pixelBoards.find(b => b._id === pixelBoardToDelete)?.title || ''
+                    }
+                />
+            )}
         </>
     );
 };
