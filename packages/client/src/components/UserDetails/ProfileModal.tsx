@@ -74,7 +74,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/80 dark:bg-gray-700/80 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-gray-700/50 flex items-center justify-center z-50 p-4">
       <div 
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}

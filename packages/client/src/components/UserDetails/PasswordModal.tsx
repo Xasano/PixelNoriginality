@@ -72,17 +72,17 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
   return (
     <>
       {/* Modal Principal */}
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden">
-          <div className="bg-blue-200 p-4">
-            <h2 className="text-black text-xl font-bold">Modifier mon mot de passe</h2>
+      <div className="fixed inset-0 bg-black/50 dark:bg-gray-700/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden">
+          <div className="bg-blue-200 dark:bg-gray-600 p-4">
+            <h2 className="text-black dark:text-white text-xl font-bold">Modifier mon mot de passe</h2>
           </div>
 
           <form onSubmit={handleSubmit} className="p-10">
             {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
 
             <div className="mb-4">
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Mot de passe actuel
               </label>
               <input
@@ -92,12 +92,12 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
                 value={formData.currentPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 dark:border-gray-600"
               />
             </div>
 
             <div className="mb-4">
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Nouveau mot de passe
               </label>
               <input
@@ -107,12 +107,12 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
                 value={formData.newPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 dark:border-gray-600"
               />
             </div>
 
             <div className="mb-6">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Confirmer le mot de passe
               </label>
               <input
@@ -122,12 +122,12 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 dark:border-gray-600"
               />
             </div>
 
             <div className="flex items-center justify-end space-x-3">
-              <LoadingButton type="button" text="Annuler" isLoading={false} variant="secondary" onClick={onClose} disabled={isSubmitting} loadingText={""} />
+              <LoadingButton type="button" text="Annuler" isLoading={false} variant="secondary" onClick={onClose} disabled={isSubmitting} loadingText={"Annuler"} />
               <LoadingButton type="submit" text="Enregistrer" loadingText="En cours..." isLoading={isSubmitting} variant="primary" disabled={isSubmitting} />
             </div>
           </form>
