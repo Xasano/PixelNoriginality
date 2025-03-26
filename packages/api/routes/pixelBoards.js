@@ -437,4 +437,29 @@ pixelBoardRouter.put(
   },
 );
 
+pixelBoardRouter.get("/status/completed", async (req, res, next) => {
+    try {
+        const pixelBoards = await PixelBoard.find({
+            $or: [
+                { status: "completed" },
+                {
+                    status: "active",
+                    endDate: { $lte: new Date() }
+                }
+            ]
+        })
+        .sort({ endDate: -1 })
+        .populate("author", "name")
+        .exec();
+
+        res.json({
+            success: true,
+            count: pixelBoards.length,
+            data: pixelBoards
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
 export { pixelBoardRouter };

@@ -3,6 +3,7 @@ import { FaUser, FaThLarge, FaPaintBrush } from "react-icons/fa";
 import axios from "axios";
 import GridBGComponent from "@components/GridBGComponent";
 import ActivePixelBoards3DCarousel from "@components/pixelboard/ActivePixelBoardsCarousel";
+import FinishedPixelBoards3DCarousel from "./components/FinishedPixelBoards";
 
 function App() {
   const [stats, setStats] = useState({
@@ -181,6 +182,10 @@ function App() {
       {/* Section PixelBoards actifs - ajoutée */}
       <section className="w-full max-w-screen-xl mx-auto px-6 py-12">
         <ActivePixelBoards3DCarousel />
+      </section>
+
+      <section className="w-full max-w-screen-xl mx-auto px-6 py-12">
+        <FinishedPixelBoards3DCarousel />
       </section>
     </div>
   );
