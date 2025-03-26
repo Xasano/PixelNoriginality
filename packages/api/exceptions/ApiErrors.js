@@ -8,6 +8,7 @@ export const ApiError = {
   WRONG_EMAIL_OR_PASSWORD: "WRONG_EMAIL_OR_PASSWORD",
   FORBIDDEN: "FORBIDDEN",
   NOT_FOUND: "NOT_FOUND",
+  SAME_PASSWORD: "SAME_PASSWORD",
 };
 
 export const ApiErrorDescription = {
@@ -20,6 +21,7 @@ export const ApiErrorDescription = {
   [ApiError.WRONG_EMAIL_OR_PASSWORD]: "Email or password is incorrect",
   [ApiError.FORBIDDEN]: "Accès forbiden",
   [ApiError.NOT_FOUND]: "Resource not found",
+  [ApiError.SAME_PASSWORD]: "New password is the same as the old one",
 };
 
 export class ApiErrorException extends Error {

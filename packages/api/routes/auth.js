@@ -164,6 +164,37 @@ authRouter.post("/logout", authenticateToken, async (req, res, next) => {
   }
 });
 
+authRouter.put("/password/:id", authenticateToken, async (req, res, next) => { 
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    if (!oldPassword || !newPassword) {
+      return next(new ApiErrorException(ApiError.BAD_REQUEST, 400));
+    }
+
+    if (oldPassword === newPassword) {
+      return next(new ApiErrorException(ApiError.SAME_PASSWORD, 400));
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return next(new ApiErrorException(ApiError.UNAUTHORIZED, 401));
+    }
+
+    const isValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isValid) {
+      return next(new ApiErrorException(ApiError.BAD_REQUEST, 400));
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
+  } catch (err) {
+    next(err);
+  }
+});
+
 authRouter.post(
     "/refresh",
     authenticateRefreshToken,
