@@ -18,24 +18,24 @@ const placePixelRoute = async (req, res, next) => {
         const { x, y, color } = req.body;
         const userId = req.user.id;
 
-        // Valider les paramètres requis
+        // Valide les paramètres requis
         if (x === undefined || y === undefined || !color) {
             throw new ApiErrorException(ApiError.BAD_REQUEST, 400, "Coordonnées et couleur requises");
         }
 
-        // Rechercher le PixelBoard
+        // Recherche le PixelBoard
         const pixelBoard = await PixelBoard.findById(id);
         if (!pixelBoard) {
             throw new ApiErrorException(ApiError.NOT_FOUND, 404);
         }
 
-        // Vérifier si l'utilisateur peut placer un pixel
+        // Vérifie si l'utilisateur peut placer un pixel
         const canPlace = pixelBoard.canUserPlacePixel(userId);
         if (!canPlace.canPlace) {
             throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
         }
 
-        // Placer le pixel
+        // Place le pixel
         pixelBoard.placePixel(parseInt(x), parseInt(y), color, userId);
         await pixelBoard.save();
 
@@ -56,7 +56,7 @@ const placePixelRoute = async (req, res, next) => {
 
 const pixelBoardRouter = express.Router();
 
-// Récupérer tous les PixelBoards (avec filtres et pagination)
+// Récupère tous les PixelBoards
 pixelBoardRouter.get("/", async (req, res, next) => {
     try {
         const {
@@ -86,15 +86,15 @@ pixelBoardRouter.get("/", async (req, res, next) => {
         // Calcul du décalage pour la pagination
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        // Exécuter la requête avec la pagination
+        // Exécute la requête avec la pagination
         const pixelBoards = await PixelBoard.find(query)
             .sort(sort)
             .skip(skip)
             .limit(parseInt(limit))
-            .populate("author", "name") // Inclure le nom de l'auteur
+            .populate("author", "name")
             .exec();
 
-        // Compter le nombre total de documents pour la pagination
+        // Compte le nombre total de documents pour la pagination
         const total = await PixelBoard.countDocuments(query);
 
         res.json({
@@ -110,7 +110,7 @@ pixelBoardRouter.get("/", async (req, res, next) => {
     }
 });
 
-// Récupérer un PixelBoard par son ID
+// Récupère un PixelBoard par son ID
 pixelBoardRouter.get("/:id", async (req, res, next) => {
     try {
         const pixelBoard = await PixelBoard.findById(req.params.id)
@@ -180,10 +180,10 @@ pixelBoardRouter.post("/", authenticateToken, async (req, res, next) => {
             endDate: endDateObj,
             width,
             height,
-            author: req.user.id, // ID de l'utilisateur à partir du token JWT
+            author: req.user.id,
             allowOverwriting: allowOverwriting || false,
             participationDelay,
-            pixels: [] // Tableau vide au départ
+            pixels: []
         });
 
         // Enregistrer le PixelBoard
@@ -242,7 +242,6 @@ pixelBoardRouter.put("/:id", authenticateToken, async (req, res, next) => {
         }
 
         // Les dimensions ne sont pas modifiables une fois le PixelBoard créé
-
         if (allowOverwriting !== undefined) pixelBoard.allowOverwriting = allowOverwriting;
 
         if (participationDelay) {
@@ -286,7 +285,7 @@ pixelBoardRouter.get("/:id/stats", async (req, res, next) => {
         const contributorIds = pixelBoard.getContributors();
         const contributorCount = contributorIds.length;
 
-        // Calculer le temps restant
+        // Calcul le temps restant
         const now = new Date();
         const timeRemainingMs = pixelBoard.endDate.getTime() - now.getTime();
         const timeRemainingDays = Math.max(0, Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24)));
@@ -327,7 +326,6 @@ pixelBoardRouter.delete("/:id", authenticateToken, async (req, res, next) => {
     }
 });
 
-// Routes réservées aux administrateurs
 
 // Route pour supprimer tous les PixelBoards (uniquement admin)
 pixelBoardRouter.delete("/", authenticateToken, requireAdmin, async (req, res, next) => {

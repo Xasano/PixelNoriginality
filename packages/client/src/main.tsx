@@ -1,4 +1,3 @@
-// src/main.tsx
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes } from "react-router";
 import { AuthProvider } from "./contexts/AuthContext";
@@ -9,6 +8,7 @@ import { Navbar } from "./components/layout/Navbar";
 import CreatePixelBoardPage from "./pages/CreatePixelBoardPage";
 import PixelBoardList from "./pages/PixelBoardList";
 import EditPixelBoardPage from "./pages/EditPixelBoardPage";
+import ActivePixelBoardsPage from "./pages/ActivePixelBoardsPage";
 import Unauthorized from "./pages/Unauthorized";
 import UserDetails from "./pages/UserDetails";
 
@@ -25,8 +25,9 @@ createRoot(document.getElementById("root")!).render(
                               <Route path="/login" element={<Login />} />
                               <Route path="/register" element={<Register />} />
                               <Route path="/me" element={<ProtectedRoute element={<UserDetails />} roles={['admin', 'user']} />} />
-                              <Route path="/pixel-boards" element={<ProtectedRoute element={<PixelBoardList />} roles={['admin', 'user']} />} />
+                              <Route path="/pixel-boards" element={<PixelBoardList />} />
                               <Route path="/pixel-boards/create" element={<ProtectedRoute element={<CreatePixelBoardPage />} roles={['admin']} />} />
+                              <Route path="/pixel-boards/active" element={<ProtectedRoute element={<ActivePixelBoardsPage />} roles={['admin', 'user']} />} />
                               <Route path="/pixel-boards/edit/:id" element={<ProtectedRoute element={<EditPixelBoardPage />} roles={['admin']} />} />
                               <Route path="/unauthorized" element={<Unauthorized />} />
                         </Routes>
