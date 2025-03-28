@@ -23,7 +23,7 @@ const visitorSchema = new Schema({
     }
 });
 
-// Méthode pour vérifier si le visiteur peut placer un pixel
+// Méthode qui verifie si le visiteur peut placer un pixel
 visitorSchema.methods.canPlacePixel = function(participationDelay) {
     if (!this.lastPixelPlaced) {
         return { canPlace: true };
@@ -42,6 +42,27 @@ visitorSchema.methods.canPlacePixel = function(participationDelay) {
     }
 
     return { canPlace: true };
+};
+
+// Méthode qui verifie si la session est active
+visitorSchema.methods.isSessionActive = function() {
+    const now = new Date();
+    const lastActivity = this.lastConnection || this.createdAt;
+
+    const inactiveThreshold = 24 * 60 * 60 * 1000; // 24h en ms
+
+    return (now.getTime() - lastActivity.getTime()) < inactiveThreshold;
+};
+
+// Méthode qui permet de nettoyer les anciennes sessions (utilité administrative)
+visitorSchema.statics.cleanupInactiveSessions = async function(thresholdDays = 7) {
+    const thresholdDate = new Date();
+    thresholdDate.setDate(thresholdDate.getDate() - thresholdDays);
+
+    const result = await this.deleteMany({
+        lastConnection: { $lt: thresholdDate }
+    });
+    return result.deletedCount;
 };
 
 export const Visitor = mongoose.model("Visitor", visitorSchema);

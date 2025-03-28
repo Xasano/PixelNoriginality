@@ -1,20 +1,17 @@
+// routes/visitors.js
 import express from "express";
-import { generateVisitorId, getVisitorById, updateVisitorLastConnection } from "../services/visitorService.js";
+import {createVisitorSession, validateVisitorSession, refreshVisitorSession, clearVisitorSession, getVisitorSessionInfo} from "../services/sessionService.js";
 import { ApiError, ApiErrorException } from "../exceptions/ApiErrors.js";
+import { authenticateVisitor } from "../middleware/visitorAuth.js";
 
 const visitorRouter = express.Router();
 
-// Route pour obtenir un nouvel ID visiteur
+// Middleware pour toutes les routes
+visitorRouter.use(authenticateVisitor);
+
 visitorRouter.post("/register", async (req, res, next) => {
     try {
-        const visitorId = await generateVisitorId();
-
-        // Configurer le cookie
-        res.cookie("visitorId", visitorId, {
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 jours
-            httpOnly: true,
-            sameSite: "strict"
-        });
+        const visitorId = await createVisitorSession(res);
 
         res.status(201).json({
             success: true,
@@ -25,28 +22,75 @@ visitorRouter.post("/register", async (req, res, next) => {
     }
 });
 
-// Route pour vérifier un ID visiteur
-visitorRouter.get("/verify/:visitorId", async (req, res, next) => {
+
+// Route pour créer une session visiteur
+visitorRouter.post("/session", async (req, res, next) => {
     try {
-        const { visitorId } = req.params;
-
-        if (!visitorId) {
-            throw new ApiErrorException(ApiError.BAD_REQUEST, 400);
+        // Si déjà authentifié comme visiteur, renvoyer la session existante
+        if (req.visitor) {
+            await refreshVisitorSession(req.visitorId, res);
+            return res.json({
+                success: true,
+                visitorId: req.visitorId,
+                message: "Session visiteur existante rafraîchie"
+            });
         }
 
-        const visitor = await getVisitorById(visitorId);
+        // Créer une nouvelle session visiteur
+        const visitorId = await createVisitorSession(res);
 
-        if (!visitor) {
-            throw new ApiErrorException(ApiError.NOT_FOUND, 404);
+        res.status(201).json({
+            success: true,
+            visitorId,
+            message: "Session visiteur créée"
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Route pour vérifier et rafraîchir une session visiteur
+visitorRouter.get("/session", async (req, res, next) => {
+    try {
+        // Si pas de session visiteur, répondre en conséquence
+        if (!req.visitor) {
+            return res.json({
+                success: false,
+                authenticated: false,
+                message: "Aucune session visiteur active"
+            });
         }
 
-        // Mettre à jour la dernière connexion
-        await updateVisitorLastConnection(visitorId);
+        // Rafraîchir la session
+        await refreshVisitorSession(req.visitorId, res);
+        // Obtenir les informations de session
+        const sessionInfo = await getVisitorSessionInfo(req.visitorId);
+
         res.json({
             success: true,
-            visitorId: visitor.visitorId,
-            createdAt: visitor.createdAt,
-            lastConnection: visitor.lastConnection
+            authenticated: true,
+            session: sessionInfo
+        });
+    } catch (err) {
+        next(err);
+    }
+});
+
+// Route pour terminer une session visiteur
+visitorRouter.delete("/session", async (req, res, next) => {
+    try {
+        // Si pas de session visiteur, répondre en conséquence
+        if (!req.visitor) {
+            return res.json({
+                success: false,
+                message: "Aucune session visiteur à terminer"
+            });
+        }
+        // Supprimer le cookie
+        clearVisitorSession(res);
+        res.json({
+            success: true,
+            message: "Session visiteur terminée"
         });
     } catch (err) {
         next(err);
