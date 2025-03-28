@@ -56,7 +56,15 @@ createRoot(document.getElementById("root")!).render(
             }
           />
 
-          <Route path="/pixel-boards/completed" element={<ProtectedRoute element={<FinishedPixelBoardsPage />} roles={['admin', 'user']} />} />
+          <Route
+            path="/pixel-boards/completed"
+            element={
+              <ProtectedRoute
+                element={<FinishedPixelBoardsPage />}
+                roles={["admin", "user"]}
+              />
+            }
+          />
           <Route
             path="/pixel-boards/edit/:id"
             element={

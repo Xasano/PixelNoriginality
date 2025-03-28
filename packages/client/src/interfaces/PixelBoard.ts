@@ -13,4 +13,5 @@ export interface IPixelBoard {
   allowOverwriting: boolean;
   participationDelay: number;
   pixels: Pixel[];
+  contributions: number;
 }

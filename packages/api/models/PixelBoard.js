@@ -44,10 +44,10 @@ const pixelBoardSchema = new Schema({
     min: 10, // Minimum 10 seconds
   },
   pixels: [pixelSchema],
-    contributions: {
-        type: Number,
-        default: 0
-    },
+  contributions: {
+    type: Number,
+    default: 0,
+  },
 });
 
 // Créer un index composite pour garantir qu'un pixel ne peut exister qu'une fois à une coordonnée spécifique
@@ -135,7 +135,7 @@ pixelBoardSchema.methods.placePixel = function (x, y, color, userId) {
     });
   }
 
-    contributions++;
+  this.contributions++;
   return this;
 };
 
