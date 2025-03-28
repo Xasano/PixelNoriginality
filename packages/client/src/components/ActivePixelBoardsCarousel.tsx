@@ -19,7 +19,7 @@ const ActivePixelBoards3DCarousel = () => {
         try {
             setLoading(true);
 
-            const response = await axios.get("http://localhost:8000/api/pixel-boards/status/completed", {
+            const response = await axios.get("http://localhost:8000/api/pixel-boards", {
                 params: {
                     status: 'active',
                     limit: 10,
@@ -191,9 +191,6 @@ const ActivePixelBoards3DCarousel = () => {
                                     >
                                         <div className="card-content shadow-lg rounded-lg overflow-hidden bg-white dark:bg-gray-800">
                                             <PixelBoardPreview board={board} className="h-full" />
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                Contributions : {board.contributions || 0}
-                                            </p>    
                                         </div>
                                         
                                     </div>

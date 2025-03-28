@@ -35,8 +35,9 @@ interface FilterState {
 }
 
 interface PixelBoardListProps {
-  showOnlyActive?: boolean; // Pour filtrer uniquement les actifs
-  hideAdminFeatures?: boolean; // Pour masquer les fonctions d'admin
+    showOnlyActive?: boolean; // Pour filtrer uniquement les actifs
+    showOnlyFinished?: boolean; // Pour filtrer uniquement les terminés
+    hideAdminFeatures?: boolean; // Pour masquer les fonctions d'admin
 }
 
 // Modal de confirmation pour la suppression
@@ -141,6 +142,7 @@ const PixelBoardPreview: React.FC<{
 
 const PixelBoardList: React.FC<PixelBoardListProps> = ({
   showOnlyActive = false,
+  showOnlyFinished = false,
   hideAdminFeatures = false,
 }) => {
   const navigate = useNavigate();
@@ -209,6 +211,8 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
         // Si on doit afficher uniquement les actifs, on force le filtre
         if (showOnlyActive) {
           queryParams.set("status", "active");
+        }else if(showOnlyFinished){
+          queryParams.set("status", "completed");
         } else if (filters.status) {
           queryParams.append("status", filters.status);
         }

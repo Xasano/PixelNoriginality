@@ -15,6 +15,7 @@ import "./index.css";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "@components/provider/AuthProvider";
 import { PixelBoard } from "./pages/PixelBoard";
+import FinishedPixelBoardsPage from "./pages/FinishedPixelBoardsPage";
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
@@ -54,6 +55,8 @@ createRoot(document.getElementById("root")!).render(
               />
             }
           />
+
+          <Route path="/pixel-boards/completed" element={<ProtectedRoute element={<FinishedPixelBoardsPage />} roles={['admin', 'user']} />} />
           <Route
             path="/pixel-boards/edit/:id"
             element={
