@@ -1,11 +1,13 @@
 import React from "react";
-import { User } from "../../model/User";
+import { User } from "../../interfaces/User";
 
 interface UserProfileHeaderProps {
   currentUser: User;
 }
 
-const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ currentUser }) => {
+const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({
+  currentUser,
+}) => {
   return (
     <div className="p-8 bg-blue-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
       <div className="flex flex-col md:flex-row md:items-center">
@@ -25,10 +27,15 @@ const UserProfileHeader: React.FC<UserProfileHeaderProps> = ({ currentUser }) =>
           )}
         </div>
         <div className="flex-1 text-center md:text-left">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">{currentUser.name}</h2>
-          <p className="text-gray-600 dark:text-gray-300 mb-2">{currentUser.email}</p>
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            {currentUser.name}
+          </h2>
+          <p className="text-gray-600 dark:text-gray-300 mb-2">
+            {currentUser.email}
+          </p>
           <div className="inline-block px-3 py-1 text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">
-            {currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
+            {currentUser.role.charAt(0).toUpperCase() +
+              currentUser.role.slice(1)}
           </div>
         </div>
       </div>

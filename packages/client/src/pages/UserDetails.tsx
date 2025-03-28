@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
-import GridBGComponent from "../components/GridBGComponent";
 import axios from "axios";
 import { useNavigate } from "react-router";
-import UserAccountDetails from "../components/UserDetails/UserAccountDetails";
-import UserActionButtons from "../components/UserDetails/UserActionButtons";
-import UserProfileHeader from "../components/UserDetails/UserProfileHeader";
-import UserStatistics from "../components/UserDetails/UserStatistics";
-import { User } from "../model/User";
+import GridBGComponent from "@components/GridBGComponent";
+import UserAccountDetails from "@components/userDetails/UserAccountDetails";
+import UserActionButtons from "@components/userDetails/UserActionButtons";
+import UserProfileHeader from "@components/userDetails/UserProfileHeader";
+import UserStatistics from "@components/userDetails/UserStatistics";
+import { User } from "@interfaces/User";
 
 const UserDetailsPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -28,7 +28,7 @@ const UserDetailsPage: React.FC = () => {
         if (axios.isAxiosError(error) && error.response) {
           setError(
             error.response.data.message ||
-              "Une erreur s'est produite lors de la récupération des données de l'utilisateur"
+              "Une erreur s'est produite lors de la récupération des données de l'utilisateur",
           );
         } else if (error instanceof Error) {
           setError(error.message);
@@ -74,7 +74,9 @@ const UserDetailsPage: React.FC = () => {
       <GridBGComponent>
         <div className="container mx-auto py-16 px-4">
           <div className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
-            <h1 className="text-2xl font-bold text-red-500 dark:text-red-400 mb-4">Erreur</h1>
+            <h1 className="text-2xl font-bold text-red-500 dark:text-red-400 mb-4">
+              Erreur
+            </h1>
             <p className="text-gray-700 dark:text-gray-300">{error}</p>
             <button
               onClick={handleNavigateToHome}
@@ -96,16 +98,25 @@ const UserDetailsPage: React.FC = () => {
     <GridBGComponent>
       <div className="container mx-auto py-16 px-4">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-center mb-8 dark:text-white">Mon Compte</h1>
-          
+          <h1 className="text-4xl font-bold text-center mb-8 dark:text-white">
+            Mon Compte
+          </h1>
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
             <UserProfileHeader currentUser={currentUser} />
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-              <UserAccountDetails currentUser={currentUser} formatDate={formatDate} />
-              <UserStatistics currentUser={currentUser} formatDate={formatDate} />
+              <UserAccountDetails
+                currentUser={currentUser}
+                formatDate={formatDate}
+              />
+              <UserStatistics
+                currentUser={currentUser}
+                formatDate={formatDate}
+              />
             </div>
             <UserActionButtons
-              handleNavigateToHome={handleNavigateToHome} currentUser={currentUser}
+              handleNavigateToHome={handleNavigateToHome}
+              currentUser={currentUser}
             />
           </div>
         </div>

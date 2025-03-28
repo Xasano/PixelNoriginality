@@ -1,0 +1,32 @@
+name: Check lint API
+
+on:
+  push:
+    paths:
+      - "packages/api/**"
+  pull_request:
+    paths:
+      - "packages/api/**"
+
+jobs:
+  build:
+    name: Lint API
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Configuration de Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Installation des dépendances
+        run: |
+          npm ci
+
+      - name: Lint
+        run: |
+          npm run lint --workspace=api

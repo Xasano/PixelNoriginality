@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ProfileFormData, ModalProps } from "./types";
 import LoadingButton from "./LoadingButton";
+import { ModalProps } from "@interfaces/ModalProps";
 
-interface ProfileModalProps extends ModalProps {}
+interface ProfileFormData {
+  id: string;
+  name: string;
+  email: string;
+  prefTheme: string;
+  avatar: string;
+}
 
-const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUser }) => {
+const ProfileModal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  currentUser,
+}) => {
   const [formData, setFormData] = useState<ProfileFormData>({
     id: currentUser?._id || "",
     name: currentUser?.name || "",
@@ -15,7 +25,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Update form data when currentUser changes
   useEffect(() => {
     if (currentUser) {
@@ -29,7 +39,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
     }
   }, [currentUser]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -39,28 +51,31 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation de base
     if (!/\S+@\S+\.\S+/.test(formData.email) && formData.email !== undefined) {
       setError("Veuillez entrer une adresse email valide");
       return;
     }
-    
+
     try {
       setIsSubmitting(true);
       setError(null);
-      
+
       // Envoi des données avec Axios
-      const response = await axios.put(`http://localhost:8000/api/user/${formData.id}`, {
-        name: formData.name,
-        email: formData.email,
-        prefTheme: formData.prefTheme,
-        avatar: formData.avatar
-      });
-      
+      const response = await axios.put(
+        `http://localhost:8000/api/user/${formData.id}`,
+        {
+          name: formData.name,
+          email: formData.email,
+          prefTheme: formData.prefTheme,
+          avatar: formData.avatar,
+        },
+      );
+
       console.log("Réponse du serveur:", response.data);
       onClose();
-      
+
       // Rechargement de la page pour afficher les modifications
       window.location.reload();
     } catch (err) {
@@ -75,24 +90,26 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
 
   return (
     <div className="fixed inset-0 bg-black/50 dark:bg-gray-700/50 flex items-center justify-center z-50 p-4">
-      <div 
+      <div
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-blue-200 dark:bg-gray-600 p-4">
-          <h2 className="text-black dark:text-white text-xl font-bold">Modifier mon profil</h2>
+          <h2 className="text-black dark:text-white text-xl font-bold">
+            Modifier mon profil
+          </h2>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-10">
           {error && (
             <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
               {error}
             </div>
           )}
-          
+
           <div className="mb-4">
-            <label 
-              htmlFor="name" 
+            <label
+              htmlFor="name"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Nom d'utilisateur
@@ -106,10 +123,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
-          
+
           <div className="mb-4">
-            <label 
-              htmlFor="email" 
+            <label
+              htmlFor="email"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Email
@@ -125,17 +142,17 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
           </div>
 
           <div className="mb-4">
-            <label 
-              htmlFor="avatar" 
+            <label
+              htmlFor="avatar"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Avatar
             </label>
             {formData.avatar && (
               <div className="mb-2 flex justify-center">
-                <img 
-                  src={formData.avatar} 
-                  alt="Avatar" 
+                <img
+                  src={formData.avatar}
+                  alt="Avatar"
                   className="w-16 h-16 rounded-full object-cover border-2 border-gray-300 dark:border-gray-600"
                 />
               </div>
@@ -161,10 +178,10 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
-          
+
           <div className="mb-6">
-            <label 
-              htmlFor="prefTheme" 
+            <label
+              htmlFor="prefTheme"
               className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
             >
               Thème préféré
@@ -181,9 +198,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
               <option value="">Système</option>
             </select>
           </div>
-          
+
           <div className="flex items-center justify-end space-x-3">
-            <LoadingButton 
+            <LoadingButton
               type="button"
               text="Annuler"
               loadingText="Annuler"
@@ -192,7 +209,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, currentUse
               onClick={onClose}
               disabled={isSubmitting}
             />
-            <LoadingButton 
+            <LoadingButton
               type="submit"
               text="Enregistrer"
               loadingText="En cours..."

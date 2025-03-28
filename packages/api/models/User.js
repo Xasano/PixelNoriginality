@@ -5,14 +5,23 @@ const userSchema = new Schema({
   avatar: { type: String, default: undefined },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, required: true, enum: ["user", "admin"], default: "user" },
-  createdAt: { type: Date, default: Date.now , immutable : true },
+  role: {
+    type: String,
+    required: true,
+    enum: ["user", "admin"],
+    default: "user",
+  },
+  createdAt: { type: Date, default: Date.now, immutable: true },
   lastConnection: { type: Date, default: Date.now },
-  prefTheme: { type: String, enum: ["light","dark",undefined] ,default: undefined },
-  stats : {
+  prefTheme: {
+    type: String,
+    enum: ["light", "dark", undefined],
+    default: undefined,
+  },
+  stats: {
     pixelBoardsParticipated: { type: Number, default: 0 },
     pixelPainted: { type: Number, default: 0 },
-    lastPixelTouched : { type: Date, default: null }
+    lastPixelTouched: { type: Date, default: null },
   },
 });
 
