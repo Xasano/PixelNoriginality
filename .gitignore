@@ -24,3 +24,5 @@ cdk.out
 
 # Mongo data
 data/
+
+**/.env
