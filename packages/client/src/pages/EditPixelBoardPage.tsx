@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import EditPixelBoardForm, {
-  PixelBoardFormData,
-} from "../components/EditPixelBoardForm";
-import GridBGComponent from "../components/GridBGComponent";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router";
+import GridBGComponent from "@components/GridBGComponent";
+import EditPixelBoardForm from "@components/pixelboard/forms/EditPixelBoardForm";
+import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
 
 const EditPixelBoardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();

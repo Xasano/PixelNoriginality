@@ -1,15 +1,21 @@
 // src/components/user/UserActionButtons.tsx
+import { User } from "@interfaces/User";
 import React, { useState } from "react";
-import { UserActionButtonsProps } from "./types";
-import ProfileModal from "./ProfileModal";
 import PasswordModal from "./PasswordModal";
+import ProfileModal from "./ProfileModal";
+
+interface UserActionButtonsProps {
+  handleNavigateToHome: () => void;
+  currentUser?: User;
+}
 
 const UserActionButtons: React.FC<UserActionButtonsProps> = ({
   handleNavigateToHome,
   currentUser,
 }) => {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
-  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState<boolean>(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] =
+    useState<boolean>(false);
 
   const openProfileModal = () => {
     setIsProfileModalOpen(true);

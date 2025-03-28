@@ -1,18 +1,9 @@
+import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 
 interface CreatePixelBoardFormProps {
   onSubmit: (pixelBoardData: PixelBoardFormData) => Promise<void>;
-}
-
-export interface PixelBoardFormData {
-  title: string;
-  status: "draft" | "active" | "completed";
-  endDate: string;
-  width: number;
-  height: number;
-  allowOverwriting: boolean;
-  participationDelay: number;
 }
 
 const CreatePixelBoardForm = (props: CreatePixelBoardFormProps) => {

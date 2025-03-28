@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ExportButton } from "./ExportButton";
-import { useAuth } from "../../contexts/AuthContext";
 import axios from "axios";
+import { useAuth } from "@hooks/useAuth";
+import { Pixel } from "@interfaces/Pixel";
 
 interface BoardProps {
   pixelboardId: string;
@@ -10,14 +11,6 @@ interface BoardProps {
   width: number;
   height: number;
   pixels?: Pixel[];
-}
-
-export interface Pixel {
-  x: number;
-  y: number;
-  color: string;
-  placedBy: string;
-  placedAt: string;
 }
 
 // Permet de limiter le nombre d'appels à une autre fonction

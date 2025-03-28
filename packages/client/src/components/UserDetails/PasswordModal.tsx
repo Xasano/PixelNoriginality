@@ -1,9 +1,19 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { ModalProps, PasswordFormData } from "./types";
+import { ModalProps } from "@interfaces/ModalProps";
 import LoadingButton from "./LoadingButton";
 
-const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) => {
+interface PasswordFormData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+const PasswordModal: React.FC<ModalProps> = ({
+  isOpen,
+  onClose,
+  currentUser,
+}) => {
   const [formData, setFormData] = useState<PasswordFormData>({
     currentPassword: "",
     newPassword: "",
@@ -55,12 +65,17 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
         },
         {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        }
+        },
       );
 
       setShowSuccessModal(true);
-      setFormData({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    } catch (err: any) {
+      setFormData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error(error);
       setError("Une erreur est survenue. Veuillez réessayer.");
     } finally {
       setIsSubmitting(false);
@@ -75,14 +90,23 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
       <div className="fixed inset-0 bg-black/50 dark:bg-gray-700/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md overflow-hidden">
           <div className="bg-blue-200 dark:bg-gray-600 p-4">
-            <h2 className="text-black dark:text-white text-xl font-bold">Modifier mon mot de passe</h2>
+            <h2 className="text-black dark:text-white text-xl font-bold">
+              Modifier mon mot de passe
+            </h2>
           </div>
 
           <form onSubmit={handleSubmit} className="p-10">
-            {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">{error}</div>}
+            {error && (
+              <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+                {error}
+              </div>
+            )}
 
             <div className="mb-4">
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Mot de passe actuel
               </label>
               <input
@@ -97,7 +121,10 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
             </div>
 
             <div className="mb-4">
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Nouveau mot de passe
               </label>
               <input
@@ -112,7 +139,10 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
             </div>
 
             <div className="mb-6">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 Confirmer le mot de passe
               </label>
               <input
@@ -127,8 +157,23 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
             </div>
 
             <div className="flex items-center justify-end space-x-3">
-              <LoadingButton type="button" text="Annuler" isLoading={false} variant="secondary" onClick={onClose} disabled={isSubmitting} loadingText={"Annuler"} />
-              <LoadingButton type="submit" text="Enregistrer" loadingText="En cours..." isLoading={isSubmitting} variant="primary" disabled={isSubmitting} />
+              <LoadingButton
+                type="button"
+                text="Annuler"
+                isLoading={false}
+                variant="secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+                loadingText={"Annuler"}
+              />
+              <LoadingButton
+                type="submit"
+                text="Enregistrer"
+                loadingText="En cours..."
+                isLoading={isSubmitting}
+                variant="primary"
+                disabled={isSubmitting}
+              />
             </div>
           </form>
         </div>
@@ -139,7 +184,9 @@ const PasswordModal: React.FC<ModalProps> = ({ isOpen, onClose, currentUser }) =
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
           <div className="bg-white rounded-lg shadow-lg w-full max-w-sm p-6 text-center transition transform scale-95 opacity-0 animate-success-modal">
             <h3 className="text-lg font-semibold text-green-600">Succès !</h3>
-            <p className="text-gray-700 mt-2">Votre mot de passe a été modifié avec succès 🎉</p>
+            <p className="text-gray-700 mt-2">
+              Votre mot de passe a été modifié avec succès 🎉
+            </p>
             <button
               className="mt-4 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition"
               onClick={() => setShowSuccessModal(false)}

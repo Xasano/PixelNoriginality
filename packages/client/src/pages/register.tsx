@@ -1,6 +1,6 @@
+import { useAuth } from "@hooks/useAuth";
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { useAuth } from "../contexts/AuthContext";
 
 const Register = () => {
   const [email, setEmail] = useState("");

@@ -3,10 +3,7 @@ import { FaUserPlus, FaPlusCircle, FaCog, FaUser } from "react-icons/fa";
 import { MdLogin, MdLogout } from "react-icons/md";
 import { BsMoonFill, BsSunFill } from "react-icons/bs";
 import { NavLink, useLocation, useNavigate } from "react-router";
-
-// URL de base de l'API
-const API_BASE_URL = 'http://localhost:8000/api';
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../hooks/useAuth";
 
 export const Navbar = () => {
   const location = useLocation();
@@ -14,7 +11,7 @@ export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Utiliser le contexte d'authentification
-  const { isLoggedIn, isAdmin, logout, user } = useAuth();
+  const { isLoggedIn, isAdmin, logout } = useAuth();
 
   // Pour le thème
   useEffect(() => {
@@ -81,7 +78,7 @@ export const Navbar = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate('/'); // Redirection vers la page d'accueil après déconnexion
+      navigate("/"); // Redirection vers la page d'accueil après déconnexion
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
     }
@@ -132,7 +129,7 @@ export const Navbar = () => {
           {/* Indicateur d'état pour le débogage */}
           {isLoggedIn && (
             <span className="ml-2 text-xs">
-              {isAdmin ? '(admin)' : '(utilisateur)'}
+              {isAdmin ? "(admin)" : "(utilisateur)"}
             </span>
           )}
         </div>
@@ -187,12 +184,18 @@ export const Navbar = () => {
             // Utilisateur non connecté
             <>
               <NavLink to="/login">
-                <button className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600" title="Se connecter">
+                <button
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  title="Se connecter"
+                >
                   <MdLogin />
                 </button>
               </NavLink>
               <NavLink to="/register">
-                <button className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600" title="S'inscrire">
+                <button
+                  className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
+                  title="S'inscrire"
+                >
                   <FaUserPlus />
                 </button>
               </NavLink>
@@ -203,7 +206,9 @@ export const Navbar = () => {
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
             onClick={handleThemeToggle}
-            title={isDarkTheme ? "Passer au thème clair" : "Passer au thème sombre"}
+            title={
+              isDarkTheme ? "Passer au thème clair" : "Passer au thème sombre"
+            }
           >
             {isDarkTheme ? <BsSunFill /> : <BsMoonFill />}
           </button>

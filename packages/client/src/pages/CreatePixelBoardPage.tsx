@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from "react";
-import CreatePixelBoardForm, {
-  PixelBoardFormData,
-} from "../components/CreatePixelBoardForm";
 import GridBGComponent from "../components/GridBGComponent";
 import axios from "axios";
 import { useNavigate } from "react-router";
+import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
+import CreatePixelBoardForm from "@components/pixelboard/forms/CreatePixelBoardForm";
 
 const CreatePixelBoardPage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string>("");

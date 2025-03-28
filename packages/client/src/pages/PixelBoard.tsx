@@ -1,6 +1,7 @@
+import { Board } from "@components/pixelboard/Board";
+import { ColorPicker } from "@components/pixelboard/ColorPicker";
+import { Pixel } from "@interfaces/Pixel";
 import { useEffect, useState } from "react";
-import { Board, Pixel } from "../components/pixelboard/Board";
-import { ColorPicker } from "../components/pixelboard/ColorPicker";
 import { useParams } from "react-router";
 
 export const PixelBoard = () => {

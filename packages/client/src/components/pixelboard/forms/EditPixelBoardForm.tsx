@@ -1,19 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import axios from "axios";
+import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
 
 interface EditPixelBoardFormProps {
   onSubmit: (pixelBoardData: PixelBoardFormData) => Promise<void>;
-}
-
-export interface PixelBoardFormData {
-  title: string;
-  status: "draft" | "active" | "completed";
-  endDate: string;
-  width: number;
-  height: number;
-  allowOverwriting: boolean;
-  participationDelay: number;
 }
 
 const EditPixelBoardForm: React.FC<EditPixelBoardFormProps> = ({

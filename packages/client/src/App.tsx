@@ -1,20 +1,25 @@
-import React, { useEffect, useState } from "react";
-import GridBGComponent from "./components/GridBGComponent";
+import { useEffect, useState } from "react";
 import { FaUser, FaThLarge, FaPaintBrush } from "react-icons/fa";
 import axios from "axios";
-import ActivePixelBoards3DCarousel from "./components/ActivePixelBoardsCarousel";
+import GridBGComponent from "@components/GridBGComponent";
+import ActivePixelBoards3DCarousel from "@components/pixelboard/ActivePixelBoardsCarousel";
 
 function App() {
   const [stats, setStats] = useState({
     nbUsers: 0,
     nbPixelBoards: 0,
-    nbPixels: 0
+    nbPixels: 0,
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Animation de compteur pour les chiffres
-    const animateValue = (start, end, duration, setter) => {
+    const animateValue = (
+      start: number,
+      end: number,
+      duration: number,
+      setter: (val: number) => void,
+    ) => {
       if (start === end) return;
       const range = end - start;
       const minFrames = 30;
@@ -36,35 +41,39 @@ function App() {
     };
 
     setLoading(true);
-    axios.get("http://localhost:8000/api/stats/")
-      .then(response => {
+    axios
+      .get("http://localhost:8000/api/stats/")
+      .then((response) => {
         setLoading(false);
         setStats({
           nbUsers: 0,
           nbPixelBoards: 0,
-          nbPixels: 0
+          nbPixels: 0,
         });
 
         setTimeout(() => {
           animateValue(0, response.data.userCount, 1000, (val) =>
-            setStats(prev => ({ ...prev, nbUsers: val }))
+            setStats((prev) => ({ ...prev, nbUsers: val })),
           );
           animateValue(0, response.data.pixelBoardCount, 1500, (val) =>
-            setStats(prev => ({ ...prev, nbPixelBoards: val }))
+            setStats((prev) => ({ ...prev, nbPixelBoards: val })),
           );
           animateValue(0, response.data.pixelCount, 2000, (val) =>
-            setStats(prev => ({ ...prev, nbPixels: val }))
+            setStats((prev) => ({ ...prev, nbPixels: val })),
           );
         }, 300);
       })
-      .catch(error => {
+      .catch((error) => {
         setLoading(false);
-        console.error("Erreur lors de la récupération des statistiques:", error);
+        console.error(
+          "Erreur lors de la récupération des statistiques:",
+          error,
+        );
       });
   }, []);
 
-  const formatNumber = (num) => {
-    return new Intl.NumberFormat('fr-FR').format(num);
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat("fr-FR").format(num);
   };
 
   return (
@@ -94,7 +103,8 @@ function App() {
               Statistiques
             </h3>
             <p className="max-w-2xl mx-auto">
-              Notre univers pixelisé en chiffres : utilisateurs, créations et contributions.
+              Notre univers pixelisé en chiffres : utilisateurs, créations et
+              contributions.
             </p>
           </div>
 
@@ -104,17 +114,20 @@ function App() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
-                    <FaUser className="text-2xl text-blue-500 dark:text-blue-300" />
+                    <FaUser />
                   </div>
-                  <div className="flex items-center text-sm font-medium text-green-500">
-                  </div>
+                  <div className="flex items-center text-sm font-medium text-green-500"></div>
                 </div>
-                <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">Utilisateurs inscrits</h4>
+                <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  Utilisateurs inscrits
+                </h4>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {loading ? '...' : formatNumber(stats.nbUsers)}
+                    {loading ? "..." : formatNumber(stats.nbUsers)}
                   </span>
-                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">créateurs</span>
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    créateurs
+                  </span>
                 </div>
               </div>
             </div>
@@ -124,15 +137,19 @@ function App() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
-                    <FaThLarge className="text-2xl text-green-500 dark:text-green-300" />
+                    <FaThLarge />
                   </div>
                 </div>
-                <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">PixelBoards créés</h4>
+                <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  PixelBoards créés
+                </h4>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {loading ? '...' : formatNumber(stats.nbPixelBoards)}
+                    {loading ? "..." : formatNumber(stats.nbPixelBoards)}
                   </span>
-                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">œuvres</span>
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    œuvres
+                  </span>
                 </div>
               </div>
             </div>
@@ -141,15 +158,19 @@ function App() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-6">
                   <div className="p-3 rounded-full bg-red-100 dark:bg-red-900">
-                    <FaPaintBrush className="text-2xl text-red-500 dark:text-red-300" />
+                    <FaPaintBrush />
                   </div>
                 </div>
-                <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">Pixels placés</h4>
+                <h4 className="text-lg font-medium text-gray-700 dark:text-gray-200 mb-1">
+                  Pixels placés
+                </h4>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {loading ? '...' : formatNumber(stats.nbPixels)}
+                    {loading ? "..." : formatNumber(stats.nbPixels)}
                   </span>
-                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">points</span>
+                  <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+                    points
+                  </span>
                 </div>
               </div>
             </div>
