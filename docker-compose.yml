@@ -17,19 +17,6 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
-  redis-pixelnoriginality:
-    image: redis
-    restart: always
-    ports:
-      - "6379:6379"
-    networks:
-      - pixelnoriginality-network
-    healthcheck:
-      test: redis-cli ping
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
   api-pixelnoriginality:
     build: 
       context: ./packages/api
@@ -47,6 +34,15 @@ services:
       dockerfile: dockerfile
     ports:
       - "80:80"
+    networks:
+      - pixelnoriginality-network
+
+  websocket-pixelnoriginality:
+    build: 
+      context: ./packages/websocketServer
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
     networks:
       - pixelnoriginality-network
 
