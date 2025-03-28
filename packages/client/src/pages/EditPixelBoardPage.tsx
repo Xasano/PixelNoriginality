@@ -78,7 +78,7 @@ const EditPixelBoardPage: React.FC = () => {
       );
 
       // Rediriger vers la page de détail du PixelBoard
-      navigate(`/pixel-boards/${id}`);
+      navigate(`/pixel-board/${id}`);
     } catch (err) {
       if (axios.isAxiosError(err) && err.response) {
         setError(

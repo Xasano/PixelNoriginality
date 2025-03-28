@@ -163,7 +163,7 @@ authRouter.post("/logout", authenticateToken, async (req, res, next) => {
   }
 });
 
-authRouter.put("/password/:id", authenticateToken, async (req, res, next) => { 
+authRouter.put("/password/:id", authenticateToken, async (req, res, next) => {
   try {
     const { oldPassword, newPassword } = req.body;
 
@@ -241,7 +241,7 @@ function generateAccessToken(user) {
     },
     process.env.ACCESS_TOKEN_SECRET,
     {
-      expiresIn: "15m",
+      expiresIn: "7d",
     },
   );
 }
@@ -257,7 +257,7 @@ function generateRefreshToken(user) {
     },
     process.env.REFRESH_TOKEN_SECRET,
     {
-      expiresIn: "7d",
+      expiresIn: "3w",
     },
   );
 }

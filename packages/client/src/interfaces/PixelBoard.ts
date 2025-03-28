@@ -1,7 +1,7 @@
 import { Author } from "./Author";
 import { Pixel } from "./Pixel";
 
-export interface PixelBoard {
+export interface IPixelBoard {
   _id: string;
   title: string;
   status: "draft" | "active" | "completed";

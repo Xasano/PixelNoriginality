@@ -86,11 +86,11 @@ export const Navbar = () => {
 
   // Détermine si le thème actuel est sombre
   const [isDarkTheme, setIsDarkTheme] = useState(false);
-  
+
   useEffect(() => {
     setIsDarkTheme(document.documentElement.classList.contains("dark"));
   }, []);
-  
+
   // Mettre à jour isDarkTheme quand le thème change
   const handleThemeToggle = () => {
     toggleTheme();

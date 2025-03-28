@@ -13,11 +13,11 @@ import {
 import GridBGComponent from "../components/GridBGComponent";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { PixelBoard } from "@interfaces/PixelBoard";
+import { IPixelBoard } from "@interfaces/PixelBoard";
 
 const API_BASE_URL = "http://localhost:8000/api";
 
-interface PixelBoardWithParticipantCount extends PixelBoard {
+interface PixelBoardWithParticipantCount extends IPixelBoard {
   participantCount?: number; // Pour compter les participants uniques
 }
 
@@ -660,10 +660,7 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
                       </div>
                     )}
 
-                    <NavLink
-                      to={`/pixel-boards/${board._id}`}
-                      className="block"
-                    >
+                    <NavLink to={`/pixel-board/${board._id}`} className="block">
                       <PixelBoardPreview board={board} />
 
                       <div className="p-4">
@@ -756,7 +753,7 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
                       <tr
                         key={board._id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                        onClick={() => navigate(`/pixel-boards/${board._id}`)}
+                        onClick={() => navigate(`/pixel-board/${board._id}`)}
                         style={{ cursor: "pointer" }}
                       >
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

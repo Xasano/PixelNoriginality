@@ -14,6 +14,7 @@ import UserDetails from "./pages/UserDetails";
 import "./index.css";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "@components/provider/AuthProvider";
+import { PixelBoard } from "./pages/PixelBoard";
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
@@ -34,6 +35,7 @@ createRoot(document.getElementById("root")!).render(
             }
           />
           <Route path="/pixel-boards" element={<PixelBoardList />} />
+          <Route path="/pixel-board/:id" element={<PixelBoard />} />
           <Route
             path="/pixel-boards/create"
             element={

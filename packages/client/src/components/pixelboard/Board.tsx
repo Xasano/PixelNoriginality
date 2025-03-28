@@ -11,60 +11,8 @@ interface BoardProps {
   width: number;
   height: number;
   pixels?: Pixel[];
-}
-
-// Permet de limiter le nombre d'appels à une autre fonction
-function throttle<T extends (...args: unknown[]) => unknown>(
-  func: T,
-  delay: number,
-  options: { leading?: boolean; trailing?: boolean } = {},
-): (...args: Parameters<T>) => void {
-  const { leading = true, trailing = true } = options;
-  let lastCallTime = 0;
-  let lastArgs: Parameters<T> | null = null;
-  let timeoutId: number | null = null;
-
-  // Fonction qui exécute l'appel réel
-  const execute = (time: number, args: Parameters<T>) => {
-    lastCallTime = time;
-    func(...args);
-  };
-
-  // Fonction pour annuler le timeout en attente
-  const cancelTrailing = () => {
-    if (timeoutId !== null) {
-      window.clearTimeout(timeoutId);
-      timeoutId = null;
-    }
-  };
-
-  // La fonction retournée
-  return (...args: Parameters<T>) => {
-    const now = Date.now();
-    const elapsed = now - lastCallTime;
-
-    // Sauvegarder les derniers arguments
-    lastArgs = args;
-
-    // Si c'est le premier appel ou si assez de temps s'est écoulé
-    if (elapsed >= delay) {
-      cancelTrailing();
-
-      if (leading || lastCallTime > 0) {
-        execute(now, args);
-      }
-    } else if (trailing && timeoutId === null) {
-      timeoutId = window.setTimeout(() => {
-        const now = Date.now();
-        timeoutId = null;
-
-        if (lastArgs !== null) {
-          execute(now, lastArgs);
-          lastArgs = null;
-        }
-      }, delay - elapsed);
-    }
-  };
+  participationTimer: number;
+  addParticipationDelay: () => void;
 }
 
 export const Board = (props: BoardProps) => {
@@ -98,7 +46,6 @@ export const Board = (props: BoardProps) => {
   const hasDragged = useRef<boolean>(false);
   const dragStartedWithShift = useRef<boolean>(false);
   const lastMousePosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const previousDimensionsRef = useRef({ width: 0, height: 0 });
   const animationFrameIdRef = useRef<number | null>(null);
   const viewportRef = useRef(viewport); // Référence de viewport pour éviter les dépendances circulaires
@@ -106,52 +53,7 @@ export const Board = (props: BoardProps) => {
   const scaleRef = useRef<number>(scale);
   const offsetRef = useRef(offset);
 
-  // Init focus event listener
-  useEffect(() => {
-    const handleFocus = () => {
-      throttledUpdateViewport();
-    };
-
-    window.addEventListener("focus", handleFocus);
-
-    return () => {
-      window.removeEventListener("focus", handleFocus);
-    };
-  }, []);
-
-  // init ResizeObserver
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const handleResize = () => {
-      if (!isResizingRef.current) {
-        throttledUpdateViewport();
-      }
-    };
-
-    // Détecte les changements de taille du conteneur
-    resizeObserverRef.current = new ResizeObserver(() => {
-      window.requestAnimationFrame(handleResize);
-    });
-    resizeObserverRef.current.observe(containerRef.current);
-
-    // Redimensionnement de la fenêtre
-    window.addEventListener("resize", handleResize);
-
-    return () => {
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-
-      window.removeEventListener("resize", handleResize);
-
-      if (animationFrameIdRef.current) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-      }
-    };
-  }, []);
-
-  // Met à jour les références
+  // MAJ des références
   useEffect(() => {
     viewportRef.current = viewport;
   }, [viewport]);
@@ -164,6 +66,137 @@ export const Board = (props: BoardProps) => {
     offsetRef.current = offset;
   }, [offset]);
 
+  // Gestion des événements de redimensionnement, focus et visibilité
+  useEffect(() => {
+    if (containerRef.current && canvasRef.current) {
+      const resizeCanvas = () => {
+        const canvas = canvasRef.current;
+        const container = containerRef.current;
+
+        if (!canvas || !container) return;
+
+        // Forcer une taille explicite sur le canvas
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        previousDimensionsRef.current = { width, height };
+
+        // Calculer les valeurs du viewport
+        const scaledPixelSize = pixelSize * scaleRef.current;
+        const minX = Math.floor(-offsetRef.current.x / scaledPixelSize);
+        const minY = Math.floor(-offsetRef.current.y / scaledPixelSize);
+        const maxX = Math.ceil((width - offsetRef.current.x) / scaledPixelSize);
+        const maxY = Math.ceil(
+          (height - offsetRef.current.y) / scaledPixelSize,
+        );
+
+        setViewport({ width, height, minX, minY, maxX, maxY });
+
+        // Force immediate redraw
+        drawCanvas();
+      };
+
+      // Effectuer le redimensionnement initial
+      resizeCanvas();
+
+      // Centrer le board sur le premier rendu si nécessaire
+      const isFirstRender = offset.x === 0 && offset.y === 0;
+      if (isFirstRender && !isLoading) {
+        setOffset({
+          x: (viewport.width - props.width * pixelSize * scale) / 2,
+          y: (viewport.height - props.height * pixelSize * scale) / 2,
+        });
+      }
+
+      // Configurer ResizeObserver
+      const resizeObserver = new ResizeObserver(() => {
+        if (!isResizingRef.current) {
+          isResizingRef.current = true;
+          window.requestAnimationFrame(() => {
+            resizeCanvas();
+            isResizingRef.current = false;
+          });
+        }
+      });
+
+      resizeObserver.observe(containerRef.current);
+
+      // Gérer le redimensionnement de la fenêtre et les événements de focus
+      const handleResize = () => resizeCanvas();
+      const handleFocus = () => {
+        if (canvasRef.current) {
+          drawCanvas();
+        }
+      };
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          setTimeout(() => {
+            forceRedraw();
+          }, 100); // Léger délai pour s'assurer que tout est prêt
+        }
+      };
+
+      window.addEventListener("resize", handleResize);
+      window.addEventListener("focus", handleFocus);
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+
+      // Redessiner périodiquement pendant quelques secondes après le focus
+      const handleVisibilityOrFocus = () => {
+        if (document.visibilityState === "visible" || document.hasFocus()) {
+          // Redessiner immédiatement
+          forceRedraw();
+
+          // Puis redessiner toutes les 100ms pendant 2 secondes
+          let count = 0;
+          const interval = setInterval(() => {
+            forceRedraw();
+            count++;
+            if (count >= 20) clearInterval(interval);
+          }, 100);
+
+          return () => clearInterval(interval);
+        }
+      };
+
+      window.addEventListener("focus", handleVisibilityOrFocus);
+      document.addEventListener("visibilitychange", handleVisibilityOrFocus);
+
+      return () => {
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
+        window.removeEventListener("resize", handleResize);
+        window.removeEventListener("focus", handleFocus);
+        window.removeEventListener("focus", handleVisibilityOrFocus);
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityChange,
+        );
+        document.removeEventListener(
+          "visibilitychange",
+          handleVisibilityOrFocus,
+        );
+
+        if (animationFrameIdRef.current) {
+          cancelAnimationFrame(animationFrameIdRef.current);
+        }
+      };
+    }
+  }, [
+    isLoading,
+    props.width,
+    props.height,
+    pixelSize,
+    scale,
+    offset,
+    viewport.width,
+    viewport.height,
+  ]);
+
   // Centre le board lorsque le chargement est fini
   useEffect(() => {
     if (!isLoading) {
@@ -172,7 +205,15 @@ export const Board = (props: BoardProps) => {
         y: (viewport.height - props.height * pixelSize * scale) / 2,
       });
     }
-  }, [isLoading]);
+  }, [
+    isLoading,
+    props.width,
+    props.height,
+    pixelSize,
+    scale,
+    viewport.width,
+    viewport.height,
+  ]);
 
   // Met à jour les pixels
   useEffect(() => {
@@ -212,48 +253,90 @@ export const Board = (props: BoardProps) => {
 
         return newData;
       });
+
+      // Force redraw after pixels update
+      forceRedraw();
     }
   }, [pixels]);
 
-  // Init et calcul le viewport
-  useEffect(() => {
-    if (containerRef.current && canvasRef.current) {
-      const canvas = canvasRef.current;
-      const container = containerRef.current;
-
-      canvas.width = container.clientWidth;
-      canvas.height = container.clientHeight;
-
-      const width = container.clientWidth;
-      const height = container.clientHeight;
-
-      previousDimensionsRef.current = { width, height };
-
-      // Calculer les valeurs du viewport
-      const scaledPixelSize = pixelSize * scale;
-      const minX = Math.floor(-offset.x / scaledPixelSize);
-      const minY = Math.floor(-offset.y / scaledPixelSize);
-      const maxX = Math.ceil((width - offset.x) / scaledPixelSize);
-      const maxY = Math.ceil((height - offset.y) / scaledPixelSize);
-
-      setViewport({ width, height, minX, minY, maxX, maxY });
-
-      // Sur le premier rendu, centrer le board
-      const isFirstRender = offset.x === 0 && offset.y === 0;
-
-      if (isFirstRender) {
-        setOffset({
-          x: (width - props.width * pixelSize) / 2,
-          y: (height - props.height * pixelSize) / 2,
-        });
-      } else {
-        requestRedraw();
-      }
-    }
-  }, [scale, offset, props.width, props.height]);
-
   // Charge les pixels visibles
   useEffect(() => {
+    const loadVisiblePixels = () => {
+      // Visible chunks
+      const minChunkX = Math.floor(viewportRef.current.minX / visibleChunkSize);
+      const minChunkY = Math.floor(viewportRef.current.minY / visibleChunkSize);
+      const maxChunkX = Math.ceil(viewportRef.current.maxX / visibleChunkSize);
+      const maxChunkY = Math.ceil(viewportRef.current.maxY / visibleChunkSize);
+
+      const maxChunksToLoad = 100;
+      let chunksToLoadCount = 0;
+
+      const newPixels = pixelData;
+      let updated = false;
+
+      for (
+        let chunkY = Math.max(-50, minChunkY);
+        chunkY <= Math.min(50, maxChunkY);
+        chunkY++
+      ) {
+        for (
+          let chunkX = Math.max(-50, minChunkX);
+          chunkX <= Math.min(50, maxChunkX);
+          chunkX++
+        ) {
+          if (chunksToLoadCount >= maxChunksToLoad) {
+            console.warn("Limite de chargement de chunks atteinte");
+            break;
+          }
+
+          const chunkKey = `${chunkX},${chunkY}`;
+
+          // Crée un nouveau chunk s'il n'existe pas
+          if (!newPixels[chunkKey]) {
+            newPixels[chunkKey] = {
+              loaded: true,
+              pixels: {},
+            };
+
+            // Ajoute les pixels existants dans ce chunk
+            if (pixels && pixels.length > 0) {
+              pixels.forEach((pixel) => {
+                const pixelChunkX = Math.floor(pixel.x / visibleChunkSize);
+                const pixelChunkY = Math.floor(pixel.y / visibleChunkSize);
+
+                if (pixelChunkX === chunkX && pixelChunkY === chunkY) {
+                  const relativeX = pixel.x - pixelChunkX * visibleChunkSize;
+                  const relativeY = pixel.y - pixelChunkY * visibleChunkSize;
+                  const pixelKey = `${relativeX},${relativeY}`;
+
+                  newPixels[chunkKey].pixels[pixelKey] = {
+                    color: pixel.color,
+                    x: pixel.x,
+                    y: pixel.y,
+                    placedBy: pixel.placedBy,
+                    placedAt: pixel.placedAt,
+                  };
+                }
+              });
+            }
+
+            updated = true;
+            chunksToLoadCount++;
+          }
+        }
+
+        if (chunksToLoadCount >= maxChunksToLoad) {
+          break;
+        }
+      }
+
+      if (updated) {
+        setPixelData(newPixels);
+        // Force a redraw immediately after updating pixel data
+        setTimeout(() => forceRedraw(), 0);
+      }
+    };
+
     if (viewport.width > 0 && viewport.height > 0) {
       loadVisiblePixels();
     }
@@ -261,6 +344,17 @@ export const Board = (props: BoardProps) => {
 
   // Redessine le canvas quand les pixels changent
   useEffect(() => {
+    const requestRedraw = () => {
+      if (animationFrameIdRef.current) {
+        cancelAnimationFrame(animationFrameIdRef.current);
+      }
+
+      animationFrameIdRef.current = requestAnimationFrame(() => {
+        drawCanvas();
+        animationFrameIdRef.current = null;
+      });
+    };
+
     requestRedraw();
   }, [pixelData]);
 
@@ -268,6 +362,20 @@ export const Board = (props: BoardProps) => {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+
+    const calculateMinimumScale = (): number => {
+      if (!containerRef.current) return 0.01;
+
+      const container = containerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      // Calcul du zoom minimal pour voir tout le board
+      const scaleX = containerWidth / (props.width * pixelSize);
+      const scaleY = containerHeight / (props.height * pixelSize);
+
+      return Math.min(scaleX, scaleY) * 0.95;
+    };
 
     const wheelHandler = (e: WheelEvent) => {
       e.preventDefault();
@@ -324,6 +432,7 @@ export const Board = (props: BoardProps) => {
     };
   }, [scale, offset, props.width, props.height]);
 
+  // Fonction de redessinage améliorée
   const drawCanvas = () => {
     if (!canvasRef.current) return;
 
@@ -331,6 +440,14 @@ export const Board = (props: BoardProps) => {
     const ctx = canvas.getContext("2d");
 
     if (!ctx) return;
+
+    // S'assurer que le canvas a une taille définie
+    if (canvas.width === 0 || canvas.height === 0) {
+      if (containerRef.current) {
+        canvas.width = containerRef.current.clientWidth;
+        canvas.height = containerRef.current.clientHeight;
+      }
+    }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -394,158 +511,20 @@ export const Board = (props: BoardProps) => {
     }
   };
 
-  const requestRedraw = () => {
-    if (animationFrameIdRef.current) {
-      cancelAnimationFrame(animationFrameIdRef.current);
-    }
+  // Force redraw function
+  const forceRedraw = () => {
+    if (canvasRef.current && containerRef.current) {
+      // Recalculer explicitement les dimensions
+      canvasRef.current.width = containerRef.current.clientWidth;
+      canvasRef.current.height = containerRef.current.clientHeight;
 
-    animationFrameIdRef.current = requestAnimationFrame(() => {
+      // Forcer le redessinage immédiat
       drawCanvas();
-      animationFrameIdRef.current = null;
-    });
-  };
-
-  const updateViewport = () => {
-    if (!containerRef.current || !canvasRef.current || isResizingRef.current) {
-      return;
     }
-
-    isResizingRef.current = true;
-
-    try {
-      const currentContainer = containerRef.current;
-      const currentCanvas = canvasRef.current;
-
-      const newWidth = currentContainer.clientWidth;
-      const newHeight = currentContainer.clientHeight;
-
-      currentCanvas.width = newWidth;
-      currentCanvas.height = newHeight;
-
-      previousDimensionsRef.current = { width: newWidth, height: newHeight };
-
-      // Recalculer les valeurs du viewport
-      const scaledPixelSize = pixelSize * scaleRef.current;
-      const minX = Math.floor(-offsetRef.current.x / scaledPixelSize);
-      const minY = Math.floor(-offsetRef.current.y / scaledPixelSize);
-      const maxX = Math.ceil(
-        (newWidth - offsetRef.current.x) / scaledPixelSize,
-      );
-      const maxY = Math.ceil(
-        (newHeight - offsetRef.current.y) / scaledPixelSize,
-      );
-
-      // Mettre à jour l'état du viewport
-      setViewport({
-        width: newWidth,
-        height: newHeight,
-        minX,
-        minY,
-        maxX,
-        maxY,
-      });
-
-      requestRedraw();
-      isResizingRef.current = false;
-    } catch (error) {
-      console.error("Erreur lors de la mise à jour du viewport:", error);
-      isResizingRef.current = false;
-    }
-  };
-
-  // Version throttled de la fonction de mise à jour du viewport pour éviter les appels excessifs
-  const throttledUpdateViewport = throttle(updateViewport, 100);
-
-  const loadVisiblePixels = () => {
-    // Visible chunks
-    const minChunkX = Math.floor(viewportRef.current.minX / visibleChunkSize);
-    const minChunkY = Math.floor(viewportRef.current.minY / visibleChunkSize);
-    const maxChunkX = Math.ceil(viewportRef.current.maxX / visibleChunkSize);
-    const maxChunkY = Math.ceil(viewportRef.current.maxY / visibleChunkSize);
-
-    const maxChunksToLoad = 100;
-    let chunksToLoadCount = 0;
-
-    const newPixels = pixelData;
-    let updated = false;
-
-    for (
-      let chunkY = Math.max(-50, minChunkY);
-      chunkY <= Math.min(50, maxChunkY);
-      chunkY++
-    ) {
-      for (
-        let chunkX = Math.max(-50, minChunkX);
-        chunkX <= Math.min(50, maxChunkX);
-        chunkX++
-      ) {
-        if (chunksToLoadCount >= maxChunksToLoad) {
-          console.warn("Limite de chargement de chunks atteinte");
-          break;
-        }
-
-        const chunkKey = `${chunkX},${chunkY}`;
-
-        // Crée un nouveau chunk s'il n'existe pas
-        if (!newPixels[chunkKey]) {
-          newPixels[chunkKey] = {
-            loaded: true,
-            pixels: {},
-          };
-
-          // Ajoute les pixels existants dans ce chunk
-          if (pixels && pixels.length > 0) {
-            pixels.forEach((pixel) => {
-              const pixelChunkX = Math.floor(pixel.x / visibleChunkSize);
-              const pixelChunkY = Math.floor(pixel.y / visibleChunkSize);
-
-              if (pixelChunkX === chunkX && pixelChunkY === chunkY) {
-                const relativeX = pixel.x - pixelChunkX * visibleChunkSize;
-                const relativeY = pixel.y - pixelChunkY * visibleChunkSize;
-                const pixelKey = `${relativeX},${relativeY}`;
-
-                newPixels[chunkKey].pixels[pixelKey] = {
-                  color: pixel.color,
-                  x: pixel.x,
-                  y: pixel.y,
-                  placedBy: pixel.placedBy,
-                  placedAt: pixel.placedAt,
-                };
-              }
-            });
-          }
-
-          updated = true;
-          chunksToLoadCount++;
-        }
-      }
-
-      if (chunksToLoadCount >= maxChunksToLoad) {
-        break;
-      }
-    }
-
-    if (updated) {
-      setPixelData(newPixels);
-    }
-  };
-
-  const calculateMinimumScale = (): number => {
-    if (!containerRef.current) return 0.01;
-
-    const container = containerRef.current;
-    const containerWidth = container.clientWidth;
-    const containerHeight = container.clientHeight;
-
-    // Calcul du zoom minimal pour voir tout le board
-    const scaleX = containerWidth / (props.width * pixelSize);
-    const scaleY = containerHeight / (props.height * pixelSize);
-
-    return Math.min(scaleX, scaleY) * 0.95;
   };
 
   const handleDrawPixel = async (e: React.MouseEvent) => {
-    if (!canvasRef.current || isLoading) return;
+    if (!canvasRef.current || isLoading || props.participationTimer > 0) return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -571,6 +550,24 @@ export const Board = (props: BoardProps) => {
       );
       return;
     }
+
+    await axios.post(
+      `http://localhost:8000/api/pixel-boards/${props.pixelboardId}/pixels`,
+      JSON.stringify({
+        x: pixelX,
+        y: pixelY,
+        color: selectedColor,
+      }),
+      {
+        withCredentials: true,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+      },
+    );
+
+    props.addParticipationDelay();
 
     // Déterminer dans quel chunk se trouve ce pixel
     const chunkX = Math.floor(pixelX / visibleChunkSize);
@@ -604,21 +601,6 @@ export const Board = (props: BoardProps) => {
         placedAt: new Date().toISOString(),
       };
 
-      axios.post(
-        `http://localhost:8000/api/pixel-boards/${props.pixelboardId}/pixels`,
-        JSON.stringify({
-          x: pixelX,
-          y: pixelY,
-          color: selectedColor,
-        }),
-        {
-          withCredentials: true,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        },
-      );
       console.log(
         `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
       );

@@ -1,9 +1,9 @@
-import { PixelBoard } from "@interfaces/PixelBoard";
+import { IPixelBoard } from "@interfaces/PixelBoard";
 import React, { useState, useEffect } from "react";
 import { NavLink } from "react-router";
 
 interface PixelBoardPreviewProps {
-  board: PixelBoard;
+  board: IPixelBoard;
   showDetails?: boolean;
   className?: string;
 }
@@ -18,6 +18,34 @@ const PixelBoardPreview: React.FC<PixelBoardPreviewProps> = ({
 
   // Calcul du temps restant et du pourcentage de complétion
   useEffect(() => {
+    // Met à jour l'affichage du temps restant
+    const updateTimeRemaining = () => {
+      const now = new Date();
+      const endDate = new Date(board.endDate);
+      const timeRemainingMs = endDate.getTime() - now.getTime();
+
+      if (timeRemainingMs <= 0) {
+        setTimeRemaining("Terminé");
+        return;
+      }
+
+      const days = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor(
+        (timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
+      );
+      const minutes = Math.floor(
+        (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60),
+      );
+
+      if (days > 0) {
+        setTimeRemaining(`${days}j ${hours}h`);
+      } else if (hours > 0) {
+        setTimeRemaining(`${hours}h ${minutes}m`);
+      } else {
+        setTimeRemaining(`${minutes}m`);
+      }
+    };
+
     // Calcul du pourcentage de complétion
     const totalPossiblePixels = board.width * board.height;
     const percentage = (board.pixels.length / totalPossiblePixels) * 100;
@@ -31,34 +59,6 @@ const PixelBoardPreview: React.FC<PixelBoardPreviewProps> = ({
 
     return () => clearInterval(intervalId);
   }, [board]);
-
-  // Met à jour l'affichage du temps restant
-  const updateTimeRemaining = () => {
-    const now = new Date();
-    const endDate = new Date(board.endDate);
-    const timeRemainingMs = endDate.getTime() - now.getTime();
-
-    if (timeRemainingMs <= 0) {
-      setTimeRemaining("Terminé");
-      return;
-    }
-
-    const days = Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24));
-    const hours = Math.floor(
-      (timeRemainingMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
-    );
-    const minutes = Math.floor(
-      (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60),
-    );
-
-    if (days > 0) {
-      setTimeRemaining(`${days}j ${hours}h`);
-    } else if (hours > 0) {
-      setTimeRemaining(`${hours}h ${minutes}m`);
-    } else {
-      setTimeRemaining(`${minutes}m`);
-    }
-  };
 
   // Détermine la couleur du badge de statut
   const getStatusBadgeColor = () => {
@@ -211,7 +211,7 @@ const PixelBoardPreview: React.FC<PixelBoardPreviewProps> = ({
       {/* Bouton d'action en mode détaillé */}
       {showDetails && (
         <div className="px-4 pb-4">
-          <NavLink to={`/pixel-boards/${board._id}`}>
+          <NavLink to={`/pixel-board/${board._id}`}>
             <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
               {board.status === "active" ? "Participer" : "Voir en détail"}
             </button>
@@ -227,7 +227,7 @@ export const PixelBoardPreviewLink: React.FC<PixelBoardPreviewProps> = (
   props,
 ) => {
   return (
-    <NavLink to={`/pixel-boards/${props.board._id}`} className="block">
+    <NavLink to={`/pixel-board/${props.board._id}`} className="block">
       <PixelBoardPreview {...props} />
     </NavLink>
   );

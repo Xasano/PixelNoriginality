@@ -1,4 +1,4 @@
-import { PixelBoard } from "@interfaces/PixelBoard";
+import { IPixelBoard } from "@interfaces/PixelBoard";
 import axios from "axios";
 
 const API_BASE_URL = "http://localhost:8000/api";
@@ -44,7 +44,7 @@ class PixelBoardService {
   }
 
   // Vérifier si un PixelBoard est actif
-  static isActiveBoard(board: PixelBoard) {
+  static isActiveBoard(board: IPixelBoard) {
     if (!board || board.status !== "active") return false;
     const now = new Date();
     const endDate = new Date(board.endDate);
@@ -52,7 +52,7 @@ class PixelBoardService {
   }
 
   // Filtrer les PixelBoards actifs
-  static filterActiveBoards(boards: PixelBoard[]) {
+  static filterActiveBoards(boards: IPixelBoard[]) {
     if (!boards || !Array.isArray(boards)) return [];
     const now = new Date();
     return boards.filter(

@@ -3,54 +3,54 @@ import { NavLink } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import axios from "axios";
 import "@/index.css";
-import { PixelBoard } from "@interfaces/PixelBoard";
+import { IPixelBoard } from "@interfaces/PixelBoard";
 import PixelBoardPreview from "./PixelBoardPreview";
 
 const ActivePixelBoards3DCarousel = () => {
-  const [pixelBoards, setPixelBoards] = useState<PixelBoard[]>([]);
+  const [pixelBoards, setPixelBoards] = useState<IPixelBoard[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
+    const fetchActivePixelBoards = async () => {
+      try {
+        setLoading(true);
+
+        const response = await axios.get(
+          "http://localhost:8000/api/pixel-boards",
+          {
+            params: {
+              status: "active",
+              limit: 10,
+              sortBy: "creationDate",
+              sortOrder: "desc",
+            },
+            withCredentials: true,
+          },
+        );
+
+        const now = new Date();
+        const activeBoards = response.data.data.filter((board: IPixelBoard) => {
+          return board.status === "active" && new Date(board.endDate) > now;
+        });
+
+        setPixelBoards(activeBoards);
+        setError(null);
+
+        if (activeBoards.length > 0 && currentIndex >= activeBoards.length) {
+          setCurrentIndex(0);
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des PixelBoards:", err);
+        setError("Impossible de charger les PixelBoards actifs");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchActivePixelBoards();
   }, []);
-
-  const fetchActivePixelBoards = async () => {
-    try {
-      setLoading(true);
-
-      const response = await axios.get(
-        "http://localhost:8000/api/pixel-boards",
-        {
-          params: {
-            status: "active",
-            limit: 10,
-            sortBy: "creationDate",
-            sortOrder: "desc",
-          },
-          withCredentials: true,
-        },
-      );
-
-      const now = new Date();
-      const activeBoards = response.data.data.filter((board: PixelBoard) => {
-        return board.status === "active" && new Date(board.endDate) > now;
-      });
-
-      setPixelBoards(activeBoards);
-      setError(null);
-
-      if (activeBoards.length > 0 && currentIndex >= activeBoards.length) {
-        setCurrentIndex(0);
-      }
-    } catch (err) {
-      console.error("Erreur lors du chargement des PixelBoards:", err);
-      setError("Impossible de charger les PixelBoards actifs");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const nextSlide = () => {
     if (pixelBoards.length > 0) {

@@ -72,7 +72,7 @@ const CreatePixelBoardPage: React.FC = () => {
 
       // Rediriger vers la page du nouveau PixelBoard
       if (response.data && response.data._id) {
-        navigate(`/pixel-boards/${response.data._id}`);
+        navigate(`/pixel-board/${response.data._id}`);
       } else {
         navigate("/pixel-boards");
       }
