@@ -3,6 +3,7 @@ import cors from "cors";
 import express, { json } from "express";
 import mongoose from "mongoose";
 import { api } from "./api.js";
+import { authenticateVisitor } from "./middleware/visitorAuth.js";
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -36,6 +37,7 @@ app.use(
 
 app.use(json());
 app.use(cookieParser());
+app.use(authenticateVisitor);
 
 app.use("/api", api);
 
