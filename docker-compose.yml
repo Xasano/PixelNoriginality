@@ -18,7 +18,7 @@ services:
       retries: 5
       start_period: 30s
   api-pixelnoriginality:
-    build: 
+    build:
       context: ./packages/api
       dockerfile: dockerfile
     ports:
@@ -29,13 +29,28 @@ services:
       mongodb-pixelnoriginality:
         condition: service_healthy
   frontend-pixelnoriginality:
-    build: 
+    build:
       context: ./packages/client
       dockerfile: dockerfile
     ports:
       - "80:80"
     networks:
       - pixelnoriginality-network
+    depends_on:
+      - "api-pixelnoriginality"
+      - "ws-pixelnoriginality"
+
+  ws-pixelnoriginality:
+    build:
+      context: ./packages/websocket
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - pixelnoriginality-network
+    depends_on:
+      mongodb-pixelnoriginality:
+        condition: service_healthy
 
 networks:
   pixelnoriginality-network:
@@ -43,4 +58,3 @@ networks:
 
 volumes:
   data:
-

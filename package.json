@@ -6,6 +6,7 @@
   "scripts": {
     "start:client": "npm run dev --workspace=client",
     "start:api": "npm start --workspace=api",
+    "start:ws": "npm start --workspace=websocket-server",
     "lint": "npm run lint --workspaces",
     "lint:fix": "npm run lint:fix --workspaces"
   },
@@ -13,8 +14,5 @@
     "packages/*"
   ],
   "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "jsonwebtoken": "^9.0.2"
-  }
+  "license": "ISC"
 }
