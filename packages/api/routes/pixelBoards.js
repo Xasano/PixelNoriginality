@@ -3,20 +3,21 @@ import { PixelBoard } from "../models/PixelBoard.js";
 import { authenticateToken } from "../middleware/token.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError, ApiErrorException } from "../exceptions/ApiErrors.js";
+import { limitVisitorRequests, restrictVisitorAccess } from "../middleware/visitorLimits.js";
 
 const pixelBoardRouter = express.Router();
 
 // Récupère tous les PixelBoards
-pixelBoardRouter.get("/", async (req, res, next) => {
-  try {
-    const {
-      status,
-      author,
-      page = 1,
-      limit = 10,
-      sortBy = "creationDate",
-      sortOrder = "desc",
-    } = req.query;
+pixelBoardRouter.get("/", limitVisitorRequests(30), async (req, res, next) => {
+    try {
+        const {
+            status,
+            author,
+            page = 1,
+            limit = 10,
+            sortBy = "creationDate",
+            sortOrder = "desc"
+        } = req.query;
 
     // Construire la requête de filtrage
     const query = {};
@@ -61,11 +62,11 @@ pixelBoardRouter.get("/", async (req, res, next) => {
 });
 
 // Récupère un PixelBoard par son ID
-pixelBoardRouter.get("/:id", async (req, res, next) => {
-  try {
-    const pixelBoard = await PixelBoard.findById(req.params.id)
-      .populate("author", "name")
-      .exec();
+pixelBoardRouter.get("/:id", limitVisitorRequests(30), async (req, res, next) => {
+    try {
+        const pixelBoard = await PixelBoard.findById(req.params.id)
+            .populate("author", "name")
+            .exec();
 
     if (!pixelBoard) {
       throw new ApiErrorException(ApiError.NOT_FOUND, 404);
@@ -282,9 +283,9 @@ pixelBoardRouter.post(
 );
 
 // Obtenir des statistiques sur un PixelBoard
-pixelBoardRouter.get("/:id/stats", async (req, res, next) => {
-  try {
-    const pixelBoard = await PixelBoard.findById(req.params.id);
+pixelBoardRouter.get("/:id/stats", limitVisitorRequests(30), async (req, res, next) => {
+    try {
+        const pixelBoard = await PixelBoard.findById(req.params.id);
 
     if (!pixelBoard) {
       throw new ApiErrorException(ApiError.NOT_FOUND, 404);
