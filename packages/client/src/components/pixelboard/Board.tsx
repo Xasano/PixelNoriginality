@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ExportButton } from "./ExportButton";
 import { useAuth } from "@hooks/useAuth";
 import { Pixel } from "@interfaces/Pixel";
-import { apiService } from "@/helpers/request";
+import { apiService, isApiError } from "@/helpers/request";
+import { ReplayButton } from "./ReplayButton";
 
 interface BoardProps {
   pixelboardId: string;
@@ -12,7 +13,7 @@ interface BoardProps {
   height: number;
   pixels?: Pixel[];
   participationTimer: number;
-  addParticipationDelay: () => void;
+  addParticipationDelay: (delay?: number) => void;
 }
 
 export const Board = (props: BoardProps) => {
@@ -52,6 +53,16 @@ export const Board = (props: BoardProps) => {
   const isResizingRef = useRef<boolean>(false);
   const scaleRef = useRef<number>(scale);
   const offsetRef = useRef(offset);
+  const isFirstRenderRef = useRef(true);
+  const pixelsProcessedRef = useRef(false);
+
+  // Nouveaux états pour le replay
+  const [isReplaying, setIsReplaying] = useState(false);
+  const [currentReplayIndex, setCurrentReplayIndex] = useState(0);
+  const [replaySpeed, setReplaySpeed] = useState(100);
+  const replayPixelsRef = useRef<Pixel[]>([]);
+  const animationFrameRef = useRef<number | null>(null);
+  const lastFrameTimeRef = useRef<number>(0);
 
   // MAJ des références
   useEffect(() => {
@@ -199,11 +210,35 @@ export const Board = (props: BoardProps) => {
 
   // Centre le board lorsque le chargement est fini
   useEffect(() => {
-    if (!isLoading) {
+    console.log("isReplaying", isReplaying);
+    if (
+      !isLoading &&
+      isFirstRenderRef.current &&
+      viewport.width > 0 &&
+      viewport.height > 0
+    ) {
+      isFirstRenderRef.current = false;
       setOffset({
         x: (viewport.width - props.width * pixelSize * scale) / 2,
         y: (viewport.height - props.height * pixelSize * scale) / 2,
       });
+    }
+
+    // Centre et dézoom le board lorsqu'un replay est lancé
+    if (isReplaying && containerRef.current) {
+      const minScale = calculateMinimumScale();
+      const container = containerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+
+      const newOffsetX =
+        (containerWidth - props.width * pixelSize * minScale) / 2;
+      const newOffsetY =
+        (containerHeight - props.height * pixelSize * minScale) / 2;
+
+      setScale(minScale);
+      setOffset({ x: newOffsetX, y: newOffsetY });
+      return;
     }
   }, [
     isLoading,
@@ -213,6 +248,7 @@ export const Board = (props: BoardProps) => {
     scale,
     viewport.width,
     viewport.height,
+    isReplaying,
   ]);
 
   // Met à jour les pixels
@@ -358,24 +394,31 @@ export const Board = (props: BoardProps) => {
     requestRedraw();
   }, [pixelData]);
 
+  // Réinitialiser le flag lorsque les pixels changent
+  useEffect(() => {
+    if (pixels && pixels.length > 0) {
+      pixelsProcessedRef.current = false;
+    }
+  }, [pixels]);
+
+  const calculateMinimumScale = (): number => {
+    if (!containerRef.current) return 0.01;
+
+    const container = containerRef.current;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+
+    // Calcul du zoom minimal pour voir tout le board
+    const scaleX = containerWidth / (props.width * pixelSize);
+    const scaleY = containerHeight / (props.height * pixelSize);
+
+    return Math.min(scaleX, scaleY) * 0.95;
+  };
+
   // Gestion du zoom
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-
-    const calculateMinimumScale = (): number => {
-      if (!containerRef.current) return 0.01;
-
-      const container = containerRef.current;
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-
-      // Calcul du zoom minimal pour voir tout le board
-      const scaleX = containerWidth / (props.width * pixelSize);
-      const scaleY = containerHeight / (props.height * pixelSize);
-
-      return Math.min(scaleX, scaleY) * 0.95;
-    };
 
     const wheelHandler = (e: WheelEvent) => {
       e.preventDefault();
@@ -432,8 +475,8 @@ export const Board = (props: BoardProps) => {
     };
   }, [scale, offset, props.width, props.height]);
 
-  // Fonction de redessinage améliorée
-  const drawCanvas = () => {
+  // Memoize la fonction pour éviter les recréations à chaque rendu
+  const drawCanvas = useCallback(() => {
     if (!canvasRef.current) return;
 
     const canvas = canvasRef.current;
@@ -451,7 +494,7 @@ export const Board = (props: BoardProps) => {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    const bgColor = "#ffffff"; // TODO: Utiliser une couleur de fond dynamique ?
+    const bgColor = "#ffffff";
     ctx.fillStyle = bgColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -509,10 +552,10 @@ export const Board = (props: BoardProps) => {
         }
       }
     }
-  };
+  }, [pixelData, props.width, props.height]);
 
   // Force redraw function
-  const forceRedraw = () => {
+  const forceRedraw = useCallback(() => {
     if (canvasRef.current && containerRef.current) {
       // Recalculer explicitement les dimensions
       canvasRef.current.width = containerRef.current.clientWidth;
@@ -521,10 +564,253 @@ export const Board = (props: BoardProps) => {
       // Forcer le redessinage immédiat
       drawCanvas();
     }
-  };
+  }, [drawCanvas]);
+
+  // Fonction pour effacer complètement le canvas
+  const clearCanvas = useCallback(() => {
+    // Créer un nouvel objet pixelData vide mais conserver la structure
+    setPixelData((prevData) => {
+      const newData = { ...prevData };
+
+      // Vider tous les pixels de tous les chunks
+      Object.keys(newData).forEach((chunkKey) => {
+        if (newData[chunkKey] && newData[chunkKey].pixels) {
+          newData[chunkKey].pixels = {};
+        }
+      });
+
+      return newData;
+    });
+  }, []);
+
+  const addReplayPixel = useCallback((pixel: Pixel) => {
+    if (!pixel) return;
+
+    // Déterminer dans quel chunk se trouve ce pixel
+    const chunkX = Math.floor(pixel.x / visibleChunkSize);
+    const chunkY = Math.floor(pixel.y / visibleChunkSize);
+    const chunkKey = `${chunkX},${chunkY}`;
+
+    // Position relative dans le chunk
+    const relativeX = pixel.x - chunkX * visibleChunkSize;
+    const relativeY = pixel.y - chunkY * visibleChunkSize;
+    const pixelKey = `${relativeX},${relativeY}`;
+
+    // Mise à jour du pixel
+    setPixelData((prevData) => {
+      const newData = { ...prevData };
+
+      if (!newData[chunkKey]) {
+        newData[chunkKey] = { loaded: true, pixels: {} };
+      }
+
+      if (!newData[chunkKey].pixels) {
+        newData[chunkKey].pixels = {};
+      }
+
+      newData[chunkKey].pixels[pixelKey] = {
+        color: pixel.color,
+        x: pixel.x,
+        y: pixel.y,
+        placedBy: pixel.placedBy,
+        placedAt: pixel.placedAt,
+      };
+
+      return newData;
+    });
+  }, []);
+
+  // Fonction pour préparer les pixels du replay sans utiliser setState
+  const prepareReplayPixels = useCallback(() => {
+    const allPixels: Pixel[] = [];
+
+    // Récupérer les pixels des chunks
+    for (const chunkKey in pixelData) {
+      const chunk = pixelData[chunkKey];
+      if (!chunk?.loaded || !chunk.pixels) continue;
+
+      for (const pixelKey in chunk.pixels) {
+        const pixel = chunk.pixels[pixelKey];
+        if (pixel && pixel.placedAt) {
+          allPixels.push(pixel);
+        }
+      }
+    }
+
+    // Ajouter les pixels du serveur s'ils ne sont pas déjà dans la liste
+    if (pixels && pixels.length > 0) {
+      pixels.forEach((pixel) => {
+        if (
+          !allPixels.some(
+            (p) =>
+              p.x === pixel.x &&
+              p.y === pixel.y &&
+              p.placedAt === pixel.placedAt,
+          )
+        ) {
+          allPixels.push(pixel);
+        }
+      });
+    }
+
+    // Trier par date de placement
+    const sortedPixels = [...allPixels].sort((a, b) => {
+      const dateA = new Date(a.placedAt || 0).getTime();
+      const dateB = new Date(b.placedAt || 0).getTime();
+      return dateA - dateB;
+    });
+
+    replayPixelsRef.current = sortedPixels;
+    console.log(`${sortedPixels.length} pixels préparés pour le replay`);
+  }, [pixelData, pixels]);
+
+  const animateReplay = useCallback(
+    (timestamp: number) => {
+      if (!isReplaying) return;
+
+      // Calculer le temps écoulé depuis la dernière frame
+      const elapsed = timestamp - lastFrameTimeRef.current;
+
+      // Si suffisamment de temps s'est écoulé (selon la vitesse choisie)
+      if (elapsed >= replaySpeed) {
+        lastFrameTimeRef.current = timestamp;
+
+        // Ajouter le pixel courant si possible
+        if (currentReplayIndex < replayPixelsRef.current.length) {
+          addReplayPixel(replayPixelsRef.current[currentReplayIndex]);
+          setCurrentReplayIndex((prev) => prev + 1);
+        } else {
+          // Fin du replay
+          setIsReplaying(false);
+          setCurrentReplayIndex(0);
+          console.log("Replay terminé");
+          return;
+        }
+      }
+
+      // Continuer l'animation
+      animationFrameRef.current = requestAnimationFrame(animateReplay);
+    },
+    [isReplaying, currentReplayIndex, replaySpeed, addReplayPixel],
+  );
+
+  // Fonction pour démarrer le replay
+  const startReplay = useCallback(() => {
+    // Préparer les pixels
+    prepareReplayPixels();
+
+    // Vérifier s'il y a des pixels à rejouer
+    if (replayPixelsRef.current.length === 0) {
+      console.warn("Aucun pixel à rejouer");
+      return;
+    }
+
+    console.log(
+      `Démarrage du replay avec ${replayPixelsRef.current.length} pixels`,
+    );
+
+    // Nettoyer le canvas
+    clearCanvas();
+
+    // Initialiser le replay
+    setCurrentReplayIndex(0);
+    setIsReplaying(true);
+  }, [prepareReplayPixels, clearCanvas]);
+
+  useEffect(() => {
+    if (isReplaying) {
+      // Démarrer l'animation
+      lastFrameTimeRef.current = performance.now();
+      animationFrameRef.current = requestAnimationFrame(animateReplay);
+    } else {
+      // Arrêter l'animation
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    }
+
+    return () => {
+      if (animationFrameRef.current !== null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [isReplaying, animateReplay]);
+
+  // Mettre à jour la collection de pixels pour le replay quand les données changent
+  useEffect(() => {
+    if (!isReplaying) {
+      prepareReplayPixels();
+    }
+  }, [pixelData, pixels, isReplaying, prepareReplayPixels]);
+
+  // Fonction pour restaurer tous les pixels après un arrêt du replay
+  const restoreAllPixels = useCallback(() => {
+    if (!pixels || pixels.length === 0) return;
+
+    setPixelData((prevData) => {
+      const newData = { ...prevData };
+
+      // Vider tous les pixels existants
+      Object.keys(newData).forEach((chunkKey) => {
+        if (newData[chunkKey]) {
+          newData[chunkKey].pixels = {};
+        }
+      });
+
+      // Ajouter tous les pixels
+      pixels.forEach((pixel) => {
+        const pixelChunkX = Math.floor(pixel.x / visibleChunkSize);
+        const pixelChunkY = Math.floor(pixel.y / visibleChunkSize);
+        const chunkKey = `${pixelChunkX},${pixelChunkY}`;
+
+        if (!newData[chunkKey]) {
+          newData[chunkKey] = { loaded: true, pixels: {} };
+        }
+
+        if (!newData[chunkKey].pixels) {
+          newData[chunkKey].pixels = {};
+        }
+
+        const relativeX = pixel.x - pixelChunkX * visibleChunkSize;
+        const relativeY = pixel.y - pixelChunkY * visibleChunkSize;
+        const pixelKey = `${relativeX},${relativeY}`;
+
+        newData[chunkKey].pixels[pixelKey] = {
+          color: pixel.color,
+          x: pixel.x,
+          y: pixel.y,
+          placedBy: pixel.placedBy,
+          placedAt: pixel.placedAt,
+        };
+      });
+
+      return newData;
+    });
+  }, [pixels]);
+
+  // Fonction pour arrêter le replay
+  const stopReplay = useCallback(() => {
+    setIsReplaying(false);
+
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    // Restaurer les pixels
+    restoreAllPixels();
+  }, [restoreAllPixels]);
 
   const handleDrawPixel = async (e: React.MouseEvent) => {
-    if (!canvasRef.current || isLoading || props.participationTimer > 0) return;
+    if (
+      !canvasRef.current ||
+      isLoading ||
+      props.participationTimer > 0 ||
+      isReplaying
+    )
+      return;
 
     const rect = canvasRef.current.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
@@ -548,24 +834,33 @@ export const Board = (props: BoardProps) => {
       console.log(
         `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
       );
+
       return;
     }
 
-    await apiService.post(
-      `/pixel-boards/${props.pixelboardId}/pixels`,
-      JSON.stringify({
-        x: pixelX,
-        y: pixelY,
-        color: selectedColor,
-      }),
-      {
-        withCredentials: true,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      },
-    );
+    try {
+      await apiService.post(
+        `/pixel-boards/${props.pixelboardId}/pixels`,
+        JSON.stringify({
+          x: pixelX,
+          y: pixelY,
+          color: selectedColor,
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      if (isApiError(err) && err.description.includes("Vous devez attendre")) {
+        const regex = /(\d+)\s*seconde[s]?/i;
+        const match = err.description.match(regex);
+
+        if (match && match[1]) {
+          console.log(match, match[1], parseInt(match[1], 10));
+          // Convertit la correspondance en nombre
+          props.addParticipationDelay(parseInt(match[1], 10));
+        }
+      }
+      return;
+    }
 
     props.addParticipationDelay();
 
@@ -607,6 +902,11 @@ export const Board = (props: BoardProps) => {
 
       return newData;
     });
+    setTimeout(() => {
+      if (!isReplaying) {
+        prepareReplayPixels();
+      }
+    }, 50);
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -809,6 +1109,12 @@ export const Board = (props: BoardProps) => {
         />
       </div>
       <ExportButton onExport={exportToImage} />
+      <ReplayButton
+        onReplay={startReplay}
+        isReplaying={isReplaying}
+        onSpeedChange={setReplaySpeed}
+        onStopReplay={stopReplay}
+      />
     </>
   );
 };

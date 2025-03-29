@@ -63,8 +63,10 @@ export const PixelBoard = () => {
             height={height}
             pixels={pixels}
             participationTimer={participationTimer}
-            addParticipationDelay={() => {
-              setParticipationTimer(participationDelay);
+            addParticipationDelay={(delay?: number) => {
+              console.log("delay", delay);
+              if (delay) setParticipationTimer(delay);
+              else setParticipationTimer(participationDelay);
             }}
           />
         </div>

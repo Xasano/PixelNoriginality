@@ -31,7 +31,7 @@ export const PixelBoardHeader = (props: PixelBoardHeaderProps) => {
   }, [endDate]);
 
   return (
-    <header className="flex w-full justify-between items-center h-16 bg-white text-black dark:bg-gray-800 dark:text-white">
+    <header className="flex w-full justify-between items-center h-16 bg-white text-black dark:bg-gray-950 dark:text-white">
       <div className="flex flex-col justify-start items-start">
         <p className="font-light">Name</p>
         <h2 className="font-bold">{name}</h2>
