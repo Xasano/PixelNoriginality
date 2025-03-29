@@ -160,4 +160,64 @@ visitorRouter.get("/limits", async (req, res, next) => {
   }
 });
 
+// Route pour obtenir les informations sur les limitations du visiteur
+visitorRouter.get("/limits", async (req, res, next) => {
+    try {
+        // Si pas de visiteur identifié
+        if (!req.visitor) {
+            return res.json({
+                success: false,
+                message: "Aucune session visiteur active"
+            });
+        }
+
+        // S'assurer que les méthodes et propriétés existent
+        if (typeof req.visitor.checkAndResetDailyLimits === 'function') {
+            req.visitor.checkAndResetDailyLimits();
+        }
+
+        // Initialiser les valeurs par défaut si elles n'existent pas
+        const dailyPixelsPlaced = req.visitor.dailyPixelsPlaced || 0;
+        const lastPixelPlaced = req.visitor.lastPixelPlaced || null;
+        const pixelsPlacedCount = req.visitor.pixelsPlacedCount || 0;
+
+        // Sauvegarder le visiteur
+        await req.visitor.save();
+
+        // Calculer le temps restant avant le prochain placement possible
+        let timeUntilNextPixel = 0;
+        if (lastPixelPlaced) {
+            const now = new Date();
+            const defaultDelay = 60; // Délai par défaut en secondes
+            const sinceLastPixel = (now - new Date(lastPixelPlaced)) / 1000;
+            timeUntilNextPixel = Math.max(0, defaultDelay - sinceLastPixel);
+        }
+
+        // Calculer le temps restant avant la réinitialisation quotidienne
+        const now = new Date();
+        const tomorrow = new Date(now);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        const timeUntilReset = Math.floor((tomorrow - now) / 1000);
+
+        const DAILY_PIXEL_LIMIT = 50;
+
+        res.json({
+            success: true,
+            limits: {
+                dailyPixelLimit: DAILY_PIXEL_LIMIT,
+                pixelsPlacedToday: dailyPixelsPlaced,
+                pixelsRemaining: DAILY_PIXEL_LIMIT - dailyPixelsPlaced,
+                timeUntilNextPixel: Math.ceil(timeUntilNextPixel),
+                timeUntilDailyReset: timeUntilReset,
+                totalPixelsPlaced: pixelsPlacedCount
+            },
+            message: "Récupération des limitations réussie"
+        });
+    } catch (err) {
+        console.error("Erreur lors de la récupération des limites:", err);
+        next(err);
+    }
+});
+
 export { visitorRouter };
