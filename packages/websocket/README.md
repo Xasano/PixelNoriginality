@@ -63,12 +63,6 @@ bun run start
 }
 ```
 
-## 🧪 Tests
-
-```bash
-bun run test
-```
-
 ## 🛠 Architecture
 
 - `src/types/`: Définitions de types TypeScript
