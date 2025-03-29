@@ -100,11 +100,11 @@ pixelBoardRouter.post("/", authenticateToken, async (req, res, next) => {
     }
 
     // Validation des dimensions
-    if (width <= 100 || width >= 1000 || height <= 100 || height >= 1000) {
+    if (width < 100 || width > 1000 || height < 100 || height > 1000) {
       throw new ApiErrorException(
         ApiError.BAD_REQUEST,
         400,
-        "Les dimensions doivent être entre 4 et 64 pixels",
+        "Les dimensions doivent être entre 100 et 1000 pixels",
       );
     }
 
