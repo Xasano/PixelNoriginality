@@ -237,7 +237,7 @@ pixelBoardRouter.put("/:id", authenticateToken, async (req, res, next) => {
   }
 });
 
-// Route pour placer un pixel (accessible aux utilisateurs connectés ET aux visiteurs)
+// Route pour placer un pixel
 pixelBoardRouter.post(
   "/:id/pixels",
   authenticateUserOrVisitor,
