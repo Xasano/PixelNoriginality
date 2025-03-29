@@ -1,5 +1,5 @@
 {
-  "name": "pixel-board-websocket-server",
+  "name": "websocket",
   "version": "1.0.0",
   "description": "WebSocket server for collaborative pixel board",
   "main": "src/index.ts",
@@ -9,7 +9,11 @@
     "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile ./dist/pixelwebsocket ./src/index.ts"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.8",
     "@types/node": "^20.10.0",
     "bun-types": "latest"
+  },
+  "dependencies": {
+    "bun": "^1.2.7"
   }
 }
