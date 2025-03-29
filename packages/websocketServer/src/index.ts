@@ -11,13 +11,13 @@ async function main() {
 
     // Gestion de l'arrêt propre
     process.on('SIGINT', () => {
-      console.log('Arrêt du serveur...');
+      console.log('Arret du serveur...');
       websocketService.stop();
       process.exit(0);
     });
 
     process.on('SIGTERM', () => {
-      console.log('Arrêt du serveur...');
+      console.log('Arret du serveur...');
       websocketService.stop();
       process.exit(0);
     });
