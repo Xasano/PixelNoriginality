@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { PixelBoardHeader } from "../components/pixelboard/PixelBoardHeader";
 import { IPixelBoard } from "@/interfaces/PixelBoard";
+import { apiService } from "@/helpers/request";
 
 export const PixelBoard = () => {
   const [selectedColor, setSelectedColor] = useState("#ff0000");
@@ -19,9 +20,9 @@ export const PixelBoard = () => {
   const { id } = useParams();
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/pixel-boards/${id}`)
-      .then((res) => res.json())
-      .then((data: IPixelBoard) => {
+    apiService
+      .get<IPixelBoard>(`/pixel-boards/${id}`)
+      .then((data) => {
         setPixels(data.pixels);
         setWidth(data.width);
         setHeight(data.height);

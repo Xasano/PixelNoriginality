@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import { ModalProps } from "@interfaces/ModalProps";
 import LoadingButton from "./LoadingButton";
+import { apiService } from "@/helpers/request";
 
 interface PasswordFormData {
   currentPassword: string;
@@ -57,16 +57,10 @@ const PasswordModal: React.FC<ModalProps> = ({
       setIsSubmitting(true);
       setError(null);
 
-      await axios.put(
-        `http://localhost:8000/api/auth/password/${currentUser?._id}`,
-        {
-          oldPassword: formData.currentPassword,
-          newPassword: formData.newPassword,
-        },
-        {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-        },
-      );
+      await apiService.put(`/auth/password/${currentUser?._id}`, {
+        oldPassword: formData.currentPassword,
+        newPassword: formData.newPassword,
+      });
 
       setShowSuccessModal(true);
       setFormData({

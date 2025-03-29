@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate, useParams } from "react-router";
 import GridBGComponent from "@components/GridBGComponent";
 import EditPixelBoardForm from "@components/pixelboard/forms/EditPixelBoardForm";
 import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
+import { apiService, isApiError } from "@/helpers/request";
+import { User } from "@/interfaces/User";
+import { IPixelBoard } from "@/interfaces/PixelBoard";
 
 const EditPixelBoardPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,22 +17,20 @@ const EditPixelBoardPage: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/auth/me", {
-          withCredentials: true,
-        });
+        const data = await apiService.get<User>("/auth/me");
 
-        if (response.data && response.data._id) {
+        if (data && data._id) {
           // Vérifier si l'utilisateur est admin ou l'auteur du PixelBoard
-          if (response.data.role !== "admin") {
+          if (data.role !== "admin") {
             // Fetch les détails du PixelBoard pour vérifier l'authorship
-            const pixelBoardResponse = await axios.get(
-              `http://localhost:8000/api/pixel-boards/${id}`,
+            const pixelBoardResponse = await apiService.get<IPixelBoard>(
+              `/pixel-boards/${id}`,
               {
                 withCredentials: true,
               },
             );
 
-            if (pixelBoardResponse.data.author._id !== response.data._id) {
+            if (pixelBoardResponse.author._id !== data._id) {
               // Rediriger si non autorisé
               navigate("/pixel-boards", {
                 state: {
@@ -65,25 +65,20 @@ const EditPixelBoardPage: React.FC = () => {
 
   const handleEditPixelBoard = async (formData: PixelBoardFormData) => {
     try {
-      await axios.put(
-        `http://localhost:8000/api/pixel-boards/${id}`,
-        formData,
-        {
-          withCredentials: true,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
+      await apiService.put(`/pixel-boards/${id}`, formData, {
+        withCredentials: true,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
-      );
+      });
 
       // Rediriger vers la page de détail du PixelBoard
       navigate(`/pixel-board/${id}`);
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
+      if (isApiError(err)) {
         setError(
-          err.response.data.message ||
-            "Erreur lors de la modification du PixelBoard",
+          err.description || "Erreur lors de la modification du PixelBoard",
         );
       } else if (err instanceof Error) {
         setError(err.message);

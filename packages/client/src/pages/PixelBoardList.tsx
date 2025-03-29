@@ -11,11 +11,11 @@ import {
   FaThLarge,
 } from "react-icons/fa";
 import GridBGComponent from "../components/GridBGComponent";
-import axios from "axios";
 import { toast } from "react-toastify";
 import { IPixelBoard } from "@interfaces/PixelBoard";
-
-const API_BASE_URL = "http://localhost:8000/api";
+import { apiService } from "@/helpers/request";
+import { User } from "@/interfaces/User";
+import { PixelBoardsWithPagination } from "@/interfaces/PixelBoardsWithPagination";
 
 interface PixelBoardWithParticipantCount extends IPixelBoard {
   participantCount?: number; // Pour compter les participants uniques
@@ -175,11 +175,11 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
   useEffect(() => {
     const checkAdminStatus = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/auth/me`, {
+        const data = await apiService.get<User>(`/auth/me`, {
           withCredentials: true,
           headers: { Accept: "application/json" },
         });
-        const isUserAdmin = response.data.role === "admin";
+        const isUserAdmin = data.role === "admin";
         setIsAdmin(isUserAdmin);
 
         // Si l'utilisateur est admin, afficher la vue tableau par défaut (sauf si on est en mode showOnlyActive)
@@ -217,40 +217,28 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
           queryParams.append("status", filters.status);
         }
 
-        const response = await axios.get(
-          `${API_BASE_URL}/pixel-boards?${queryParams.toString()}`,
-          {
-            withCredentials: true,
-            headers: { Accept: "application/json" },
-          },
+        const response = await apiService.get<PixelBoardsWithPagination>(
+          `/pixel-boards?${queryParams.toString()}`,
         );
 
         // Récupérer les détails et statistiques pour chaque PixelBoard
         let boardsWithDetails = await Promise.all(
-          (response.data.data || []).map(
+          (response.data || []).map(
             async (board: PixelBoardWithParticipantCount) => {
               try {
                 // Récupérer les détails complets
-                const boardResponse = await axios.get(
-                  `${API_BASE_URL}/pixel-boards/${board._id}`,
-                  {
-                    withCredentials: true,
-                    headers: { Accept: "application/json" },
-                  },
+                const boardResponse = await apiService.get<IPixelBoard>(
+                  `/pixel-boards/${board._id}`,
                 );
 
                 // Récupérer les statistiques pour obtenir le nombre de participants
-                const statsResponse = await axios.get(
-                  `${API_BASE_URL}/pixel-boards/${board._id}/stats`,
-                  {
-                    withCredentials: true,
-                    headers: { Accept: "application/json" },
-                  },
-                );
+                const statsResponse = await apiService.get<{
+                  contributorCount: number;
+                }>(`/pixel-boards/${board._id}/stats`);
 
                 return {
-                  ...boardResponse.data,
-                  participantCount: statsResponse.data.contributorCount || 0,
+                  ...boardResponse,
+                  participantCount: statsResponse.contributorCount || 0,
                 };
               } catch (err) {
                 console.error(
@@ -317,7 +305,7 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
         }
 
         setPixelBoards(filteredBoards);
-        setTotalPages(response.data.pagination?.pages || 1);
+        setTotalPages(response.pagination?.pages || 1);
       } catch (err) {
         console.error("Erreur lors du chargement des PixelBoards:", err);
         setError("Une erreur est survenue lors du chargement des PixelBoards");
@@ -334,7 +322,7 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
     if (!pixelBoardToDelete) return;
 
     try {
-      await axios.delete(`${API_BASE_URL}/pixel-boards/${pixelBoardToDelete}`, {
+      await apiService.delete(`/pixel-boards/${pixelBoardToDelete}`, {
         withCredentials: true,
       });
       setPixelBoards((prev) =>

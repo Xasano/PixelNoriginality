@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
 import { useNavigate } from "react-router";
 import GridBGComponent from "@components/GridBGComponent";
 import UserAccountDetails from "@components/userDetails/UserAccountDetails";
@@ -7,6 +6,7 @@ import UserActionButtons from "@components/userDetails/UserActionButtons";
 import UserProfileHeader from "@components/userDetails/UserProfileHeader";
 import UserStatistics from "@components/userDetails/UserStatistics";
 import { User } from "@interfaces/User";
+import { apiService, isApiError } from "@/helpers/request";
 
 const UserDetailsPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -17,17 +17,15 @@ const UserDetailsPage: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/auth/me", {
-          withCredentials: true,
-        });
+        const data = await apiService.get<User>("/auth/me");
 
-        if (response.data && response.data._id) {
-          setCurrentUser(response.data);
+        if (data && data._id) {
+          setCurrentUser(data);
         }
       } catch (error) {
-        if (axios.isAxiosError(error) && error.response) {
+        if (isApiError(error)) {
           setError(
-            error.response.data.message ||
+            error.description ||
               "Une erreur s'est produite lors de la récupération des données de l'utilisateur",
           );
         } else if (error instanceof Error) {

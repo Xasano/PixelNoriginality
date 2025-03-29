@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import GridBGComponent from "../components/GridBGComponent";
-import axios from "axios";
 import { useNavigate } from "react-router";
 import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
 import CreatePixelBoardForm from "@components/pixelboard/forms/CreatePixelBoardForm";
+import { apiService, isApiError } from "@/helpers/request";
+import { User } from "@/interfaces/User";
+import { IPixelBoard } from "@/interfaces/PixelBoard";
 
 const CreatePixelBoardPage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string>("");
@@ -15,12 +17,12 @@ const CreatePixelBoardPage: React.FC = () => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
-        const response = await axios.get("http://localhost:8000/api/auth/me", {
+        const data = await apiService.get<User>("/auth/me", {
           withCredentials: true,
         });
 
-        if (response.data && response.data._id) {
-          setCurrentUserId(response.data._id);
+        if (data && data._id) {
+          setCurrentUserId(data._id);
         } else {
           // Rediriger vers la page de connexion si non connecté
           navigate("/login", {
@@ -55,8 +57,8 @@ const CreatePixelBoardPage: React.FC = () => {
       };
 
       // Appel API pour créer le PixelBoard
-      const response = await axios.post(
-        "http://localhost:8000/api/pixel-boards",
+      const data = await apiService.post<IPixelBoard>(
+        "/pixel-boards",
         pixelBoardData,
         {
           withCredentials: true,
@@ -68,20 +70,17 @@ const CreatePixelBoardPage: React.FC = () => {
       );
 
       // Log pour débogage
-      console.log("Réponse de création:", response.data);
+      console.log("Réponse de création:", data);
 
       // Rediriger vers la page du nouveau PixelBoard
-      if (response.data && response.data._id) {
-        navigate(`/pixel-board/${response.data._id}`);
+      if (data && data._id) {
+        navigate(`/pixel-board/${data._id}`);
       } else {
         navigate("/pixel-boards");
       }
     } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        setError(
-          err.response.data.message ||
-            "Erreur lors de la création du PixelBoard",
-        );
+      if (isApiError(err)) {
+        setError(err.description || "Erreur lors de la création du PixelBoard");
       } else if (err instanceof Error) {
         setError(err.message);
       } else {

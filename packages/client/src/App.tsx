@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { FaUser, FaThLarge, FaPaintBrush } from "react-icons/fa";
-import axios from "axios";
 import GridBGComponent from "@components/GridBGComponent";
 import ActivePixelBoards3DCarousel from "@components/pixelboard/ActivePixelBoardsCarousel";
 import FinishedPixelBoards3DCarousel from "@components/pixelboard/FinishedPixelBoards";
+import { apiService } from "./helpers/request";
 
 function App() {
   const [stats, setStats] = useState({
@@ -42,9 +42,11 @@ function App() {
     };
 
     setLoading(true);
-    axios
-      .get("http://localhost:8000/api/stats/")
-      .then((response) => {
+    apiService
+      .get<{ userCount: number; pixelBoardCount: number; pixelCount: number }>(
+        "/stats/",
+      )
+      .then((data) => {
         setLoading(false);
         setStats({
           nbUsers: 0,
@@ -53,13 +55,13 @@ function App() {
         });
 
         setTimeout(() => {
-          animateValue(0, response.data.userCount, 1000, (val) =>
+          animateValue(0, data.userCount, 1000, (val) =>
             setStats((prev) => ({ ...prev, nbUsers: val })),
           );
-          animateValue(0, response.data.pixelBoardCount, 1500, (val) =>
+          animateValue(0, data.pixelBoardCount, 1500, (val) =>
             setStats((prev) => ({ ...prev, nbPixelBoards: val })),
           );
-          animateValue(0, response.data.pixelCount, 2000, (val) =>
+          animateValue(0, data.pixelCount, 2000, (val) =>
             setStats((prev) => ({ ...prev, nbPixels: val })),
           );
         }, 300);
