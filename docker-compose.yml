@@ -36,6 +36,14 @@ services:
       - "80:80"
     networks:
       - pixelnoriginality-network
+  websocket-pixelnoriginality:
+    build: 
+      context: ./packages/websocket
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - pixelnoriginality-network
 
 networks:
   pixelnoriginality-network:
