@@ -2,46 +2,47 @@ import mongoose, { Schema } from "mongoose";
 import crypto from "crypto";
 
 const visitorSchema = new Schema({
-  visitorId: {
-    type: String,
-    required: true,
-    unique: true,
-    default: () => crypto.randomUUID(),
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    expires: 604800, // Expire après 7 jours (en secondes)
-  },
-  lastConnection: {
-    type: Date,
-    default: Date.now,
-  },
-  lastPixelPlaced: {
-    type: Date,
-    default: null,
-  },
-  pixelsPlacedCount: {
-    type: Number,
-    default: 0,
-  },
-  lastRequest: {
-    type: Date,
-    default: null,
-  },
-  requestCount: {
-    type: Number,
-    default: 0,
-  },
-  // Limite de pixels par jour
-  dailyPixelsPlaced: {
-    type: Number,
-    default: 0,
-  },
-  lastDailyReset: {
-    type: Date,
-    default: () => new Date().setHours(0, 0, 0, 0), // Minuit du jour actuel
-  },
+    visitorId: {
+        type: String,
+        required: true,
+        unique: true,
+        default: () => crypto.randomUUID()
+    },
+    createdAt: {
+        type: Date,
+        default: Date.now,
+        expires: 604800 // Expire après 7 jours (en secondes)
+    },
+    lastConnection: {
+        type: Date,
+        default: Date.now
+    },
+    lastPixelPlaced: {
+        type: Date,
+        default: null
+    },
+    pixelsPlacedCount: {
+        type: Number,
+        default: 0
+    },
+    lastRequest: {
+        type: Date,
+        default: null
+    },
+    requestCount: {
+        type: Number,
+        default: 0
+    },
+    // Limite de pixels par jour
+    dailyPixelsPlaced: {
+        type: Number,
+        default: 0
+    },
+    lastDailyReset: {
+        type: Date,
+        default: () => new Date().setHours(0, 0, 0, 0) // Minuit du jour actuel
+    }
+
 });
 
 // Méthode qui verifie si le visiteur peut placer un pixel
