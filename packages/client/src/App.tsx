@@ -3,6 +3,7 @@ import { FaUser, FaThLarge, FaPaintBrush } from "react-icons/fa";
 import axios from "axios";
 import GridBGComponent from "@components/GridBGComponent";
 import ActivePixelBoards3DCarousel from "@components/pixelboard/ActivePixelBoardsCarousel";
+import FinishedPixelBoards3DCarousel from "@components/pixelboard/FinishedPixelBoards";
 
 function App() {
   const [stats, setStats] = useState({
@@ -166,7 +167,7 @@ function App() {
                 </h4>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : formatNumber(stats.nbPixels)}
+                    {loading ? "..." : formatNumber(stats.nbPixels || 0)}
                   </span>
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     points
@@ -181,6 +182,10 @@ function App() {
       {/* Section PixelBoards actifs - ajoutée */}
       <section className="w-full max-w-screen-xl mx-auto px-6 py-12">
         <ActivePixelBoards3DCarousel />
+      </section>
+
+      <section className="w-full max-w-screen-xl mx-auto px-6 py-12">
+        <FinishedPixelBoards3DCarousel />
       </section>
     </div>
   );
