@@ -167,7 +167,7 @@ function App() {
                 </h4>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : formatNumber(stats.nbPixels)}
+                    {loading ? "..." : formatNumber(stats.nbPixels || 0)}
                   </span>
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     points
