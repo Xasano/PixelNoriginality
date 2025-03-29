@@ -5,6 +5,7 @@ const pixelSchema = new Schema({
   y: { type: Number, required: true },
   color: { type: String, required: true },
   placedBy: { type: Schema.Types.ObjectId, ref: "User" },
+  isVisitor: { type: Boolean, default: false },
   placedAt: { type: Date, default: Date.now },
 });
 
@@ -105,7 +106,13 @@ pixelBoardSchema.methods.canUserPlacePixel = function (userId) {
 };
 
 // Méthode pour placer un pixel
-pixelBoardSchema.methods.placePixel = async function (x, y, color, userId) {
+pixelBoardSchema.methods.placePixel = function (
+  x,
+  y,
+  color,
+  placerId,
+  isVisitor = false,
+) {
   // Vérifier si les coordonnées sont valides
   if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
     throw new Error("Coordonnées de pixel invalides");
@@ -149,7 +156,8 @@ pixelBoardSchema.methods.placePixel = async function (x, y, color, userId) {
 
     // Sinon, mettre à jour le pixel existant
     this.pixels[existingPixelIndex].color = color;
-    this.pixels[existingPixelIndex].placedBy = userId;
+    this.pixels[existingPixelIndex].placedBy = placerId;
+    this.pixels[existingPixelIndex].isVisitor = isVisitor;
     this.pixels[existingPixelIndex].placedAt = new Date();
   } else {
     // Ajouter un nouveau pixel
@@ -157,11 +165,13 @@ pixelBoardSchema.methods.placePixel = async function (x, y, color, userId) {
       x,
       y,
       color,
-      placedBy: userId,
+      placedBy: placerId,
+      isVisitor,
       placedAt: new Date(),
     });
   }
 
+  this.contributions++;
   return this;
 };
 
