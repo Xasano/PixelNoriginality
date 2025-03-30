@@ -326,7 +326,7 @@ pixelBoardRouter.post("/:id/pixels", async (req, res, next) => {
         });
       }
       // Enregistrer le placement de pixel par le visiteur
-      await req.visitor.recordPixelPlacement();
+      await req.visitor.recordPixelPlacement(pixelBoard._id);
     } else {
       // Ni utilisateur connecté ni visiteur identifié
       throw new ApiErrorException(
