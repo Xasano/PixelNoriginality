@@ -8,7 +8,7 @@
   }
 
   .dark body {
-    @apply bg-black;
+    @apply bg-gray-950;
   }
 }
 
@@ -22,7 +22,6 @@
     );
   }
 }
-
 
 .carousel-container {
   perspective: 1000px;
@@ -69,6 +68,7 @@
   transform: translate(-50%, -50%) translateZ(160px) scale(1.03);
 }
 
-.card-left:hover, .card-right:hover {
+.card-left:hover,
+.card-right:hover {
   opacity: 1;
 }

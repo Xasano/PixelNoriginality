@@ -11,7 +11,7 @@ export const ExportButton = (props: ExportButtonProps) => {
   const [showTypes, setShowTypes] = useState(false);
 
   return (
-    <div className="absolute bottom-2 right-2 flex flex-col gap-2 items-end">
+    <div className="absolute bottom-4 right-4 flex flex-col gap-2 items-end">
       <div
         className={`flex flex-col bg-gray-100 dark:bg-gray-800 rounded-md shadow-md overflow-hidden w-15 ${
           showTypes ? "h-16" : "h-0"
