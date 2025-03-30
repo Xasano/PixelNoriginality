@@ -9,7 +9,7 @@ function App() {
   const [stats, setStats] = useState({
     nbUsers: 0,
     nbPixelBoards: 0,
-    nbPixels: 0,
+    nbContributions: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -43,15 +43,17 @@ function App() {
 
     setLoading(true);
     apiService
-      .get<{ userCount: number; pixelBoardCount: number; pixelCount: number }>(
-        "/stats/",
-      )
+      .get<{
+        userCount: number;
+        pixelBoardCount: number;
+        contributionCount: number;
+      }>("/stats/")
       .then((data) => {
         setLoading(false);
         setStats({
           nbUsers: 0,
           nbPixelBoards: 0,
-          nbPixels: 0,
+          nbContributions: 0,
         });
 
         setTimeout(() => {
@@ -61,8 +63,8 @@ function App() {
           animateValue(0, data.pixelBoardCount, 1500, (val) =>
             setStats((prev) => ({ ...prev, nbPixelBoards: val })),
           );
-          animateValue(0, data.pixelCount, 2000, (val) =>
-            setStats((prev) => ({ ...prev, nbPixels: val })),
+          animateValue(0, data.contributionCount, 2000, (val) =>
+            setStats((prev) => ({ ...prev, nbContributions: val })),
           );
         }, 300);
       })
@@ -169,7 +171,7 @@ function App() {
                 </h4>
                 <div className="flex items-baseline">
                   <span className="text-3xl font-bold text-gray-900 dark:text-white">
-                    {loading ? "..." : formatNumber(stats.nbPixels || 0)}
+                    {loading ? "..." : formatNumber(stats.nbContributions || 0)}
                   </span>
                   <span className="ml-2 text-sm text-gray-500 dark:text-gray-400">
                     points

@@ -1,6 +1,7 @@
 import express from "express";
 import { User } from "../models/User.js";
 import { PixelBoard } from "../models/PixelBoard.js";
+import { Contribution } from "../models/Contribution.js";
 
 const statsRouter = express.Router();
 
@@ -14,30 +15,20 @@ statsRouter.get("/", async (req, res, next) => {
     const pixelBoardCount = await PixelBoard.countDocuments();
 
     // Récupère le nombre total de pixels placés
-    const pixelsResult = await PixelBoard.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalPixels: { $sum: { $size: "$pixels" } },
-        },
-      },
-    ]);
-
-    const totalPixels =
-      pixelsResult.length > 0 ? pixelsResult[0].totalPixels : 0;
+    const contributionCount = await Contribution.countDocuments();
 
     // Renvoie les statistiques
     res.json({
       userCount,
       pixelBoardCount,
-      totalPixels,
+      contributionCount,
     });
   } catch (err) {
     next(err);
   }
 });
 
-// Route pour obtenir les statistiques utilisateur
+// Route pour obtenir le nombre d'utilisateur
 statsRouter.get("/users", async (req, res, next) => {
   try {
     const userCount = await User.countDocuments();
@@ -47,7 +38,7 @@ statsRouter.get("/users", async (req, res, next) => {
   }
 });
 
-// Route pour obtenir les statistiques des PixelBoards
+// Route pour obtenir le nombre de PixelBoards
 statsRouter.get("/pixel-boards", async (req, res, next) => {
   try {
     const pixelBoardCount = await PixelBoard.countDocuments();
@@ -58,20 +49,11 @@ statsRouter.get("/pixel-boards", async (req, res, next) => {
 });
 
 // Route pour obtenir le nombre total de pixels
-statsRouter.get("/pixels", async (req, res, next) => {
+statsRouter.get("/contributions", async (req, res, next) => {
   try {
-    const pixelsResult = await PixelBoard.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalPixels: { $sum: { $size: "$pixels" } },
-        },
-      },
-    ]);
-
-    const totalPixels =
-      pixelsResult.length > 0 ? pixelsResult[0].totalPixels : 0;
-    res.json({ count: totalPixels });
+    const contributionCount = await Contribution.countDocuments();
+    console.log("Nombre de contributions :", contributionCount);
+    res.json({ count: contributionCount });
   } catch (err) {
     next(err);
   }

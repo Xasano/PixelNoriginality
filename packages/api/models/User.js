@@ -23,6 +23,13 @@ const userSchema = new Schema({
     pixelPainted: { type: Number, default: 0 },
     lastPixelTouched: { type: Date, default: null },
   },
+  contributions: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Contribution",
+      default: [],
+    },
+  ],
 });
 
 userSchema.methods.toJSON = function () {
