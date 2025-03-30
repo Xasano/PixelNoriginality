@@ -31,6 +31,7 @@ export default tseslint.config(
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
       ],
       "prettier/prettier": "error",
+      "linebreak-style": ["error", "unix"],
     },
   }
 );
