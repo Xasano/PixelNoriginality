@@ -4,6 +4,7 @@ import { useAuth } from "@hooks/useAuth";
 import { Pixel } from "@interfaces/Pixel";
 import { apiService, isApiError } from "@/helpers/request";
 import { ReplayButton } from "./ReplayButton";
+import { websocketService } from "@/helpers/websocket";
 
 interface BoardProps {
   pixelboardId: string;
@@ -17,7 +18,7 @@ interface BoardProps {
 }
 
 export const Board = (props: BoardProps) => {
-  const { isLoading, selectedColor, pixels } = props;
+  const { isLoading, selectedColor, pixels, pixelboardId } = props;
   const { user } = useAuth();
 
   const [isDragging, setIsDragging] = useState(false);
@@ -63,6 +64,58 @@ export const Board = (props: BoardProps) => {
   const replayPixelsRef = useRef<Pixel[]>([]);
   const animationFrameRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    websocketService.connect();
+    setTimeout(() => {
+      websocketService.subscribeToBoard(pixelboardId);
+
+      websocketService.onMessage((message) => {
+        const data = JSON.parse(message.data);
+        console.log(data, websocketService.isUpdatePixelBoardMessage(data));
+        if (websocketService.isUpdatePixelBoardMessage(data)) {
+          // Add new pixel to board
+          const pixel: Pixel = {
+            x: data.update.x,
+            y: data.update.y,
+            color: data.update.color,
+            placedBy: data.update.author,
+            placedAt: data.update.timestamp.toString(),
+          };
+          console.log("WS NEW PIXEL", pixel);
+          setPixelData((prevData) => {
+            const newData = { ...prevData };
+
+            // Déterminer dans quel chunk se trouve ce pixel
+            const chunkX = Math.floor(pixel.x / visibleChunkSize);
+            const chunkY = Math.floor(pixel.y / visibleChunkSize);
+            const chunkKey = `${chunkX},${chunkY}`;
+
+            // Position relative dans le chunk
+            const relativeX = pixel.x - chunkX * visibleChunkSize;
+            const relativeY = pixel.y - chunkY * visibleChunkSize;
+            const pixelKey = `${relativeX},${relativeY}`;
+
+            if (!newData[chunkKey]) {
+              newData[chunkKey] = { loaded: true, pixels: {} };
+            }
+
+            if (!newData[chunkKey].pixels) {
+              newData[chunkKey].pixels = {};
+            }
+
+            newData[chunkKey].pixels[pixelKey] = pixel;
+
+            return newData;
+          });
+        }
+      });
+    }, 100);
+
+    return () => {
+      websocketService.close();
+    };
+  }, []);
 
   // MAJ des références
   useEffect(() => {
@@ -840,8 +893,18 @@ export const Board = (props: BoardProps) => {
 
     try {
       await apiService.post(
-        `/pixel-boards/${props.pixelboardId}/pixels`,
+        `/pixel-boards/${pixelboardId}/pixels`,
         JSON.stringify({
+          x: pixelX,
+          y: pixelY,
+          color: selectedColor,
+        }),
+      );
+
+      websocketService.sendMessage(
+        JSON.stringify({
+          type: "update_pixel",
+          pixelBoardId: pixelboardId,
           x: pixelX,
           y: pixelY,
           color: selectedColor,
@@ -854,8 +917,6 @@ export const Board = (props: BoardProps) => {
         const match = err.description.match(regex);
 
         if (match && match[1]) {
-          console.log(match, match[1], parseInt(match[1], 10));
-          // Convertit la correspondance en nombre
           props.addParticipationDelay(parseInt(match[1], 10));
         }
       }
