@@ -23,26 +23,21 @@ export const PixelBoard = () => {
   const { isLoggedIn } = useAuth();
   const [visitorSessionCreated, setVisitorSessionCreated] = useState(false);
 
+  // Création de session visiteur si nécessaire
   useEffect(() => {
-      if (!isLoggedIn && !visitorSessionCreated) {
-          fetch("http://localhost:8000/api/visitors/session", {
-              method: "POST",
-              credentials: "include",
-              headers: {
-                  "Content-Type": "application/json",
-              }
-          })
-              .then((res) => res.json())
-              .then((data) => {
-                  if (data.success) {
-                      setVisitorSessionCreated(true);
-                  }
-              })
-              .catch((err) => {
-                  console.error("Erreur de création de session visiteur:", err);
-              });
-      }
-      }, [isLoggedIn, visitorSessionCreated]);
+    if (!isLoggedIn && !visitorSessionCreated) {
+      apiService
+        .post<{ success: boolean; visitorId: string }>("/visitors/session")
+        .then((data) => {
+          if (data.success) {
+            setVisitorSessionCreated(true);
+          }
+        })
+        .catch((err) => {
+          console.error("Erreur de création de session visiteur:", err);
+        });
+    }
+  }, [isLoggedIn, visitorSessionCreated]);
 
   useEffect(() => {
     apiService

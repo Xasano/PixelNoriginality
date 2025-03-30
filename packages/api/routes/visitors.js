@@ -124,27 +124,30 @@ visitorRouter.get("/limits", async (req, res, next) => {
     // Sauvegarder le visiteur
     await req.visitor.save();
 
-        // Obtenir le délai spécifique du PixelBoard si disponible, sinon utiliser la valeur par défaut
-        let boardDelay = 60; // Délai par défaut en secondes
-        if (lastPixelBoardId) {
-            try {
-                const PixelBoard = mongoose.model('PixelBoard');
-                const pixelBoard = await PixelBoard.findById(lastPixelBoardId);
-                if (pixelBoard && pixelBoard.participationDelay) {
-                    boardDelay = pixelBoard.participationDelay;
-                }
-            } catch (error) {
-                console.error("Erreur lors de la récupération du délai du PixelBoard:", error);
-            }
+    // Obtenir le délai spécifique du PixelBoard si disponible, sinon utiliser la valeur par défaut
+    let boardDelay = 60; // Délai par défaut en secondes
+    if (lastPixelBoardId) {
+      try {
+        const PixelBoard = mongoose.model("PixelBoard");
+        const pixelBoard = await PixelBoard.findById(lastPixelBoardId);
+        if (pixelBoard && pixelBoard.participationDelay) {
+          boardDelay = pixelBoard.participationDelay;
         }
+      } catch (error) {
+        console.error(
+          "Erreur lors de la récupération du délai du PixelBoard:",
+          error,
+        );
+      }
+    }
 
-        // Calculer le temps restant avant le prochain placement possible
-        let timeUntilNextPixel = 0;
-        if (lastPixelPlaced) {
-            const now = new Date();
-            const sinceLastPixel = (now - new Date(lastPixelPlaced)) / 1000;
-            timeUntilNextPixel = Math.max(0, boardDelay - sinceLastPixel);
-        }
+    // Calculer le temps restant avant le prochain placement possible
+    let timeUntilNextPixel = 0;
+    if (lastPixelPlaced) {
+      const now = new Date();
+      const sinceLastPixel = (now - new Date(lastPixelPlaced)) / 1000;
+      timeUntilNextPixel = Math.max(0, boardDelay - sinceLastPixel);
+    }
 
     // Calculer le temps restant avant la réinitialisation quotidienne
     const now = new Date();
@@ -164,7 +167,7 @@ visitorRouter.get("/limits", async (req, res, next) => {
         timeUntilNextPixel: Math.ceil(timeUntilNextPixel),
         timeUntilDailyReset: timeUntilReset,
         totalPixelsPlaced: pixelsPlacedCount,
-        boardDelay: boardDelay
+        boardDelay: boardDelay,
       },
       message: "Récupération des limitations réussie",
     });
