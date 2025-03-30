@@ -42,11 +42,11 @@ const visitorSchema = new Schema({
     type: Date,
     default: () => new Date().setHours(0, 0, 0, 0), // Minuit du jour actuel
   },
-    lastPixelBoardId: {
-        type: Schema.Types.ObjectId,
-        ref: 'PixelBoard',
-        default: null
-    }
+  lastPixelBoardId: {
+    type: Schema.Types.ObjectId,
+    ref: "PixelBoard",
+    default: null,
+  },
 });
 
 // Méthode qui verifie si le visiteur peut placer un pixel
@@ -96,16 +96,16 @@ visitorSchema.methods.checkAndResetDailyLimits = function () {
 };
 
 // Méthode pour enregistrer un placement de pixel
-visitorSchema.methods.recordPixelPlacement = async function () {
+visitorSchema.methods.recordPixelPlacement = async function (pixelBoardId) {
   this.checkAndResetDailyLimits();
 
   this.lastPixelPlaced = new Date();
   this.pixelsPlacedCount = (this.pixelsPlacedCount || 0) + 1;
   this.dailyPixelsPlaced = (this.dailyPixelsPlaced || 0) + 1;
 
-    if (pixelBoardId) {
-        this.lastPixelBoardId = pixelBoardId;
-    }
+  if (pixelBoardId) {
+    this.lastPixelBoardId = pixelBoardId;
+  }
 
   return this.save();
 };
