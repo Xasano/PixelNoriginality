@@ -1,16 +1,11 @@
-name: Build React App
+name: Lint and Build Frontend
 
 on:
-  push:
-    paths:
-      - "packages/client/**"
   pull_request:
-    paths:
-      - "packages/client/**"
 
 jobs:
   build:
-    name: Build Frontend
+    name: Lint and Build Frontend
     runs-on: ubuntu-latest
 
     steps:
@@ -34,3 +29,9 @@ jobs:
       - name: Build
         run: |
           npm run build --workspace=client
+
+      - name: Créer un artefact de succès
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-lint-and-build-success
+          path: success.txt

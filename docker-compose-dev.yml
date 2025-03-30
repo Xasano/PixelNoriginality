@@ -3,8 +3,10 @@ services:
     image: mongo
     restart: always
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${DB_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${DB_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: root
+    ports:
+      - "27017:27017"
     volumes:
       - ./data:/data/db
     networks:
@@ -16,21 +18,20 @@ services:
       retries: 5
       start_period: 30s
   api-pixelnoriginality:
-    image: xasan0/pixelnoriginality-api:latest
+    build:
+      context: ./packages/api
+      dockerfile: dockerfile
     ports:
       - "8000:8000"
-    environment:
-      - ACCESS_TOKEN_SECRET=${ACCESS_TOKEN_SECRET}
-      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET}
-      - MONGO_URL=${MONGO_URL}
-      - INIT_SECRET_KEY=${INIT_SECRET_KEY}
     networks:
       - pixelnoriginality-network
     depends_on:
       mongodb-pixelnoriginality:
         condition: service_healthy
   frontend-pixelnoriginality:
-    image: xasan0/pixelnoriginality-frontend:latest
+    build:
+      context: ./packages/client
+      dockerfile: dockerfile
     ports:
       - "80:80"
     networks:
@@ -40,7 +41,9 @@ services:
       - "ws-pixelnoriginality"
 
   ws-pixelnoriginality:
-    image: xasan0/pixelnoriginality-websocket:latest
+    build:
+      context: ./packages/websocket
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     networks:

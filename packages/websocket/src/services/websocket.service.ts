@@ -1,8 +1,22 @@
 import type { WebSocketMessage, PixelUpdate, WebSocketData } from "../types";
 import Bun from "bun";
 
+// Define types for Bun WebSocket server and connections
+interface BunServer {
+  upgrade: (req: Request, options: { data: WebSocketData }) => boolean;
+  publish: (channel: string, message: string) => void;
+  stop: () => void;
+}
+
+interface BunWebSocket {
+  data: WebSocketData;
+  send: (message: string) => void;
+  subscribe: (channel: string) => void;
+  unsubscribe: (channel: string) => void;
+}
+
 export class WebSocketService {
-  private server: any;
+  private server: BunServer | null = null;
 
   constructor() {}
 
@@ -16,13 +30,13 @@ export class WebSocketService {
         close: this.handleClose.bind(this),
       },
       port,
-    });
+    }) as BunServer;
 
     return this.server;
   }
 
   // Gestion de la connexion initiale
-  private handleUpgrade(req: Request, server: any) {
+  private handleUpgrade(req: Request, server: BunServer) {
     const url = new URL(req.url);
     const username = url.searchParams.get("username") || "Anonymous";
 
@@ -34,14 +48,14 @@ export class WebSocketService {
   }
 
   // Gestion de l'ouverture de connexion
-  private handleOpen(ws: any) {
+  private handleOpen(ws: BunWebSocket) {
     const data = ws.data as WebSocketData;
     const username = data.username || "Anonymous";
     console.log(`Nouvel utilisateur connecté : ${username}`);
   }
 
   // Gestion des messages
-  private async handleMessage(ws: any, message: string) {
+  private async handleMessage(ws: BunWebSocket, message: string) {
     try {
       const parsedMessage = JSON.parse(message.toString()) as WebSocketMessage;
 
@@ -64,7 +78,7 @@ export class WebSocketService {
   }
 
   // Désabonnement d'un pixel board
-  private handleUnsubscribe(ws: any, message: { pixelBoardId: string }) {
+  private handleUnsubscribe(ws: BunWebSocket, message: { pixelBoardId: string }) {
     if (!message.pixelBoardId) {
       throw new Error("pixelBoardId est requis pour se désabonner");
     }
@@ -83,7 +97,7 @@ export class WebSocketService {
   }
 
   // Abonnement à un pixel board
-  private handleSubscribe(ws: any, message: { pixelBoardId: string }) {
+  private handleSubscribe(ws: BunWebSocket, message: { pixelBoardId: string }) {
     if (!message.pixelBoardId) {
       throw new Error("pixelBoardId est requis pour s'abonner");
     }
@@ -100,7 +114,7 @@ export class WebSocketService {
   }
 
   // Mise à jour d'un pixel
-  private async handlePixelUpdate(ws: any, pixelUpdate: PixelUpdate) {
+  private async handlePixelUpdate(ws: BunWebSocket, pixelUpdate: PixelUpdate) {
     // Validation
     if (!this.validatePixelUpdate(pixelUpdate)) {
       throw new Error("Données de pixel invalides");
@@ -114,6 +128,10 @@ export class WebSocketService {
     };
 
     // Broadcast aux clients abonnés
+    if (!this.server) {
+      throw new Error("Server not initialized");
+    }
+    
     this.server.publish(
       `pixelboard:${pixelUpdate.pixelBoardId}`,
       JSON.stringify({
@@ -141,7 +159,7 @@ export class WebSocketService {
   }
 
   // Gestion des erreurs
-  private handleError(ws: any, error: any) {
+  private handleError(ws: BunWebSocket, error: unknown) {
     console.error("Erreur de traitement du message:", error);
     ws.send(
       JSON.stringify({
@@ -152,7 +170,8 @@ export class WebSocketService {
   }
 
   // Gestion de la fermeture de connexion
-  private handleClose(ws: any) {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private handleClose(ws: BunWebSocket) {
     console.log("Connexion WebSocket fermée");
   }
 

@@ -6,12 +6,16 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "dev": "bun run --watch src/index.ts",
+    "lint": "eslint .",
     "build": "bun build --compile --minify-whitespace --minify-syntax --target bun --outfile ./dist/pixelwebsocket ./src/index.ts"
   },
   "devDependencies": {
     "@types/bun": "^1.2.8",
     "@types/node": "^20.10.0",
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "eslint": "^9.23.0",
+    "globals": "^16.0.0",
+    "typescript-eslint": "^8.28.0"
   },
   "dependencies": {
     "bun": "^1.2.7"

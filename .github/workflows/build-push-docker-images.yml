@@ -1,0 +1,162 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_run:
+    workflows: ["Lint API", "Lint WebSocket", "Lint and Build Frontend"]
+    types:
+      - completed
+    branches: [main]
+  
+
+jobs:
+  verify_prerequisites:
+    name: Vérifier les prérequis
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.default_branch }}
+    
+    steps:
+      - name: Vérifier que tous les workflows prérequis ont réussi
+        run: |
+          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
+            echo "Un ou plusieurs workflows prérequis ont échoué. Arrêt du workflow."
+            exit 1
+          fi
+        
+      - name: Créer un fichier de marqueur de succès
+        run: echo "SUCCESS=true" > verify_success.txt
+        
+      - name: Sauvegarder le résultat de vérification
+        uses: actions/upload-artifact@v4
+        with:
+          name: prerequisites-verification
+          path: verify_success.txt
+
+  docker:
+    name: Build and Push Docker Images
+    needs: verify_prerequisites
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Télécharger l'artefact de succès pour API
+        uses: actions/download-artifact@v4
+        with:
+          name: lint-and-build-success
+        if: ${{ github.event.workflow_run.workflow == 'Lint and Build API' }}
+
+      - name: Télécharger l'artefact de succès pour WebSocket
+        uses: actions/download-artifact@v4
+        with:
+          name: websocket-lint-and-build-success
+        if: ${{ github.event.workflow_run.workflow == 'Lint and Build WebSocket' }}
+
+      - name: Télécharger l'artefact de succès pour Frontend
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-lint-and-build-success
+        if: ${{ github.event.workflow_run.workflow == 'Lint and Build Frontend' }}
+
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Connexion à Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Définir la version basée sur le numéro de build GitHub
+        id: version
+        run: echo "VERSION=${{ github.run_number }}" >> $GITHUB_ENV
+
+      - name: Build et push de l'image API
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-api:${{ env.VERSION }} -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-api:latest ./packages/api
+          docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-api:${{ env.VERSION }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-api:latest
+
+      - name: Build et push de l'image WebSocket
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-websocket:${{ env.VERSION }} -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-websocket:latest ./packages/websocket
+          docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-websocket:${{ env.VERSION }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-websocket:latest
+
+      - name: Build et push de l'image Frontend
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:${{ env.VERSION }} -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:latest ./packages/client
+          docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:${{ env.VERSION }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:latest
+          
+      - name: Créer un marqueur de succès pour le build Docker
+        run: echo "DOCKER_SUCCESS=true" > docker_success.txt
+        
+      - name: Sauvegarder le résultat du build Docker
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-build-success
+          path: docker_success.txt
+
+  deploy:
+    name: Déploiement sur la VM
+    needs: docker
+    runs-on: ubuntu-latest
+    if: success()
+
+    steps:
+      - name: Télécharger le résultat de vérification des prérequis
+        uses: actions/download-artifact@v4
+        with:
+          name: prerequisites-verification
+          
+      - name: Télécharger le résultat du build Docker
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-build-success
+          
+      - name: Vérifier les résultats précédents
+        run: |
+          if [[ ! -f verify_success.txt ]] && [[ ! -f docker_success.txt ]]; then
+            echo "Les étapes précédentes n'ont pas toutes réussi. Arrêt du déploiement."
+            exit 1
+          fi
+    
+      - name: Checkout du code
+        uses: actions/checkout@v4
+        
+      - name: Installer SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Copier le fichier docker-compose sur la VM
+        run: |
+          scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.SSH_USER }}/docker-compose.yml
+      
+      - name: Export des variables d'environnement
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "export ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }} && \
+          export REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }} && \
+          export MONGO_URL=${{ secrets.MONGO_URL }} && \
+          export INIT_SECRET_KEY=${{ secrets.INIT_SECRET_KEY }} && \
+          export DB_USER=${{ secrets.DB_USER }} && \
+          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+
+      - name: Déployer et lancer le docker-compose
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "cd /home/${{ secrets.SSH_USER }} && \
+          docker-compose pull && \
+          docker-compose down && \
+          docker-compose up -d"
+
+      - name: Vérifier le statut des conteneurs
+        run: |
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "docker-compose ps"
+          
+      - name: Nettoyer la clé SSH
+        run: |
+          rm -f ~/.ssh/id_rsa
+        if: always()
