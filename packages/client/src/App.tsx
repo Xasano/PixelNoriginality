@@ -43,9 +43,11 @@ function App() {
 
     setLoading(true);
     apiService
-      .get<{ userCount: number; pixelBoardCount: number; contributionCount: number }>(
-        "/stats/",
-      )
+      .get<{
+        userCount: number;
+        pixelBoardCount: number;
+        contributionCount: number;
+      }>("/stats/")
       .then((data) => {
         setLoading(false);
         setStats({

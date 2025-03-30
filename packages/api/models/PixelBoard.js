@@ -1,5 +1,4 @@
 import mongoose, { Schema } from "mongoose";
-import { contributionSchema } from "./Contribution.js";
 
 const pixelSchema = new Schema({
   x: { type: Number, required: true },
@@ -45,10 +44,12 @@ const pixelBoardSchema = new Schema({
     min: 10, // Minimum 10 seconds
   },
   pixels: [pixelSchema],
-  contributions: [{
-    type: Schema.Types.ObjectId,
-    ref: "Contribution"
-  }],
+  contributions: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: "Contribution",
+    },
+  ],
 });
 
 // Créer un index composite pour garantir qu'un pixel ne peut exister qu'une fois à une coordonnée spécifique
@@ -130,22 +131,15 @@ pixelBoardSchema.methods.placePixel = async function (x, y, color, userId) {
 
   // Update the user with the new contribution
   const User = mongoose.model("User");
-  await User.findByIdAndUpdate(
-    userId,
-    {
-      $push: { contributions: contribution._id },
-      $inc: { "stats.pixelPainted": 1 },
-      $set: { "stats.lastPixelTouched": new Date() },
-      $inc: { "stats.pixelBoardsParticipated": 1 }  // This will add the board ID only if it's not already there
-    }
-  );
+  await User.findByIdAndUpdate(userId, {
+    $push: { contributions: contribution._id },
+    $inc: { "stats.pixelPainted": 1, "stats.pixelBoardsParticipated": 1 },
+    $set: { "stats.lastPixelTouched": new Date() },
+  });
 
-  await mongoose.model("PixelBoard").findByIdAndUpdate(
-    this._id,
-    { 
-      $push: { contributions: contribution._id }
-    }
-  );
+  await mongoose.model("PixelBoard").findByIdAndUpdate(this._id, {
+    $push: { contributions: contribution._id },
+  });
 
   if (existingPixelIndex >= 0) {
     // Si le pixel existe déjà et que la superposition n'est pas autorisée

@@ -50,7 +50,7 @@ statsRouter.get("/pixel-boards", async (req, res, next) => {
 
 // Route pour obtenir le nombre total de pixels
 statsRouter.get("/contributions", async (req, res, next) => {
-  try{
+  try {
     const contributionCount = await Contribution.countDocuments();
     console.log("Nombre de contributions :", contributionCount);
     res.json({ count: contributionCount });
