@@ -6,6 +6,8 @@ import { useParams } from "react-router";
 import { PixelBoardHeader } from "../components/pixelboard/PixelBoardHeader";
 import { IPixelBoard } from "@/interfaces/PixelBoard";
 import { apiService } from "@/helpers/request";
+import { useAuth } from "@hooks/useAuth";
+import { VisitorBanner } from "@components/pixelboard/VisitorBanner";
 
 export const PixelBoard = () => {
   const [selectedColor, setSelectedColor] = useState("#ff0000");
@@ -18,6 +20,29 @@ export const PixelBoard = () => {
   const [participationTimer, setParticipationTimer] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
+  const { isLoggedIn } = useAuth();
+  const [visitorSessionCreated, setVisitorSessionCreated] = useState(false);
+
+  useEffect(() => {
+      if (!isLoggedIn && !visitorSessionCreated) {
+          fetch("http://localhost:8000/api/visitors/session", {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                  "Content-Type": "application/json",
+              }
+          })
+              .then((res) => res.json())
+              .then((data) => {
+                  if (data.success) {
+                      setVisitorSessionCreated(true);
+                  }
+              })
+              .catch((err) => {
+                  console.error("Erreur de création de session visiteur:", err);
+              });
+      }
+      }, [isLoggedIn, visitorSessionCreated]);
 
   useEffect(() => {
     apiService
@@ -72,6 +97,7 @@ export const PixelBoard = () => {
         </div>
       </div>
       <ColorPicker onSelectedColorChange={setSelectedColor} />
+      {!isLoggedIn && <VisitorBanner />}
     </div>
   );
 };
