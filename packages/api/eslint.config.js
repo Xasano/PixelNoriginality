@@ -13,6 +13,7 @@ export default [
     rules: {
       "prettier/prettier": "error",
       "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "linebreak-style": ["error", "unix"],
     },
   },
   pluginJs.configs.recommended,
