@@ -232,54 +232,127 @@ pixelBoardRouter.put("/:id", authenticateToken, async (req, res, next) => {
 });
 
 // Route pour placer un pixel
+// Route pour placer un pixel (accessible aux utilisateurs connectés ET aux visiteurs)
 pixelBoardRouter.post(
-  "/:id/pixels",
-  authenticateToken,
-  async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const { x, y, color } = req.body;
-      const userId = req.user.id;
+    "/:id/pixels",
+    async (req, res, next) => {
+        try {
+            const { id } = req.params;
+            const { x, y, color } = req.body;
 
-      // Valide les paramètres requis
-      if (x === undefined || y === undefined || !color) {
-        throw new ApiErrorException(
-          ApiError.BAD_REQUEST,
-          400,
-          "Coordonnées et couleur requises",
-        );
-      }
+            // Valide les paramètres requis
+            if (x === undefined || y === undefined || !color) {
+                throw new ApiErrorException(
+                    ApiError.BAD_REQUEST,
+                    400,
+                    "Coordonnées et couleur requises",
+                );
+            }
 
-      // Recherche le PixelBoard
-      const pixelBoard = await PixelBoard.findById(id);
-      if (!pixelBoard) {
-        throw new ApiErrorException(ApiError.NOT_FOUND, 404);
-      }
+            // Recherche le PixelBoard
+            const pixelBoard = await PixelBoard.findById(id);
+            if (!pixelBoard) {
+                throw new ApiErrorException(ApiError.NOT_FOUND, 404);
+            }
 
-      // Vérifie si l'utilisateur peut placer un pixel
-      const canPlace = pixelBoard.canUserPlacePixel(userId);
-      if (!canPlace.canPlace) {
-        throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
-      }
+            // Vérifier si le PixelBoard est actif
+            if (pixelBoard.status !== "active") {
+                throw new ApiErrorException(
+                    ApiError.FORBIDDEN,
+                    403,
+                    "Ce PixelBoard n'est pas actif"
+                );
+            }
 
-      // Place le pixel
-      pixelBoard.placePixel(parseInt(x), parseInt(y), color, userId);
-      await pixelBoard.save();
+            // Vérifier si la date de fin n'est pas dépassée
+            if (new Date() > pixelBoard.endDate) {
+                throw new ApiErrorException(
+                    ApiError.FORBIDDEN,
+                    403,
+                    "Ce PixelBoard est terminé"
+                );
+            }
 
-      res.json({
-        success: true,
-        message: "Pixel placé avec succès",
-        boardId: pixelBoard._id,
-        pixel: {
-          x,
-          y,
-          color,
-        },
-      });
-    } catch (err) {
-      next(err);
+            if (req.user) {
+                // Utilisateur connecté
+                const userId = req.user.id;
+                // Vérifie si l'utilisateur peut placer un pixel
+                const canPlace = pixelBoard.canUserPlacePixel(userId);
+                if (!canPlace.canPlace) {
+                    throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
+                }
+                // Place le pixel
+                pixelBoard.placePixel(parseInt(x), parseInt(y), color, userId);
+            } else if (req.visitor) {
+                // Visiteur non connecté
+                // Vérifie si le visiteur peut placer un pixel
+                const canPlace = req.visitor.canPlacePixel(pixelBoard.participationDelay);
+                if (!canPlace.canPlace) {
+                    throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
+                }
+
+                // Pour les visiteurs, au lieu d'utiliser placePixel avec l'ID visiteur,
+                // manipulez directement le tableau de pixels
+                const pixelX = parseInt(x);
+                const pixelY = parseInt(y);
+                // Vérifier si cette position est déjà occupée
+                const existingPixelIndex = pixelBoard.pixels.findIndex(
+                    (pixel) => pixel.x === pixelX && pixel.y === pixelY
+                );
+
+                if (existingPixelIndex >= 0) {
+                    // Si le pixel existe déjà et que la superposition n'est pas autorisée
+                    if (!pixelBoard.allowOverwriting) {
+                        throw new ApiErrorException(
+                            ApiError.FORBIDDEN,
+                            403,
+                            "Ce pixel est déjà occupé"
+                        );
+                    }
+                    // Mettre à jour le pixel existant
+                    pixelBoard.pixels[existingPixelIndex].color = color;
+                    pixelBoard.pixels[existingPixelIndex].isVisitor = true;
+                    pixelBoard.pixels[existingPixelIndex].placedAt = new Date();
+                    // Ne pas modifier placedBy
+                } else {
+                    // Ajouter un nouveau pixel (sans placedBy pour les visiteurs)
+                    pixelBoard.pixels.push({
+                        x: pixelX,
+                        y: pixelY,
+                        color,
+                        isVisitor: true,
+                        placedAt: new Date()
+                    });
+                }
+                // Enregistrer le placement de pixel par le visiteur
+                await req.visitor.recordPixelPlacement();
+            } else {
+                // Ni utilisateur connecté ni visiteur identifié
+                throw new ApiErrorException(
+                    ApiError.UNAUTHORIZED,
+                    401,
+                    "Vous devez être connecté ou avoir une session visiteur valide pour placer un pixel"
+                );
+            }
+
+            // Enregistrer les modifications du PixelBoard
+            await pixelBoard.save();
+
+            res.json({
+                success: true,
+                message: "Pixel placé avec succès",
+                boardId: pixelBoard._id,
+                pixel: {
+                    x: parseInt(x),
+                    y: parseInt(y),
+                    color,
+                },
+            });
+        } catch (err) {
+            console.error("Erreur dans la route de placement de pixels:", err);
+            next(err);
+        }
     }
-  },
 );
 
 // Obtenir des statistiques sur un PixelBoard
