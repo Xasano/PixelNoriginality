@@ -125,7 +125,7 @@ pixelBoardSchema.methods.placePixel = async function (
 
   const Contribution = mongoose.model("Contribution");
   const contribution = new Contribution({
-    user: userId,
+    user: placerId,
     pixelBoard: this._id,
     pixelX: x,
     pixelY: y,
@@ -138,7 +138,7 @@ pixelBoardSchema.methods.placePixel = async function (
 
   // Update the user with the new contribution
   const User = mongoose.model("User");
-  await User.findByIdAndUpdate(userId, {
+  await User.findByIdAndUpdate(placerId, {
     $push: { contributions: contribution._id },
     $inc: { "stats.pixelPainted": 1, "stats.pixelBoardsParticipated": 1 },
     $set: { "stats.lastPixelTouched": new Date() },
