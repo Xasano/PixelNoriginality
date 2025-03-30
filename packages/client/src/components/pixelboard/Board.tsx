@@ -65,6 +65,12 @@ export const Board = (props: BoardProps) => {
   const animationFrameRef = useRef<number | null>(null);
   const lastFrameTimeRef = useRef<number>(0);
 
+  // PARTIE MOBILE
+  // Pour le zoom à deux doigts
+  const lastPinchDistance = useRef<number>(0);
+  const lastPinchScale = useRef<number>(1);
+  const pinchCenter = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
   useEffect(() => {
     websocketService.connect();
     setTimeout(() => {
@@ -129,6 +135,120 @@ export const Board = (props: BoardProps) => {
   useEffect(() => {
     offsetRef.current = offset;
   }, [offset]);
+
+  const handleDrawPixel = async (e: React.MouseEvent) => {
+    if (
+      !canvasRef.current ||
+      isLoading ||
+      props.participationTimer > 0 ||
+      isReplaying
+    )
+      return;
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    // Conversion en coordonnées de pixel
+    const pixelX = Math.floor(
+      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current),
+    );
+    const pixelY = Math.floor(
+      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current),
+    );
+
+    // Vérifier si le pixel est dans les limites du tableau
+    if (
+      pixelX < 0 ||
+      pixelX >= props.width ||
+      pixelY < 0 ||
+      pixelY >= props.height
+    ) {
+      console.log(
+        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
+      );
+
+      return;
+    }
+
+    try {
+      await apiService.post(
+        `/pixel-boards/${pixelboardId}/pixels`,
+        JSON.stringify({
+          x: pixelX,
+          y: pixelY,
+          color: selectedColor,
+        }),
+      );
+
+      websocketService.sendMessage(
+        JSON.stringify({
+          type: "update_pixel",
+          pixelBoardId: pixelboardId,
+          x: pixelX,
+          y: pixelY,
+          color: selectedColor,
+        }),
+      );
+    } catch (err) {
+      console.error(err);
+      if (isApiError(err) && err.description.includes("Vous devez attendre")) {
+        const regex = /(\d+)\s*seconde[s]?/i;
+        const match = err.description.match(regex);
+
+        if (match && match[1]) {
+          props.addParticipationDelay(parseInt(match[1], 10));
+        }
+      }
+      return;
+    }
+
+    props.addParticipationDelay();
+
+    // Déterminer dans quel chunk se trouve ce pixel
+    const chunkX = Math.floor(pixelX / visibleChunkSize);
+    const chunkY = Math.floor(pixelY / visibleChunkSize);
+    const chunkKey = `${chunkX},${chunkY}`;
+
+    // Position relative dans le chunk
+    const relativeX = pixelX - chunkX * visibleChunkSize;
+    const relativeY = pixelY - chunkY * visibleChunkSize;
+    const pixelKey = `${relativeX},${relativeY}`;
+
+    // Mise à jour du pixel
+    setPixelData((prevData) => {
+      const newData = { ...prevData };
+
+      if (!newData[chunkKey]) {
+        newData[chunkKey] = { loaded: true, pixels: {} };
+      }
+
+      // S'assurer que l'objet pixels existe et n'est pas undefined
+      if (!newData[chunkKey].pixels) {
+        newData[chunkKey].pixels = {};
+      }
+
+      // Création ou mise à jour du pixel
+      newData[chunkKey].pixels[pixelKey] = {
+        color: selectedColor,
+        x: pixelX,
+        y: pixelY,
+        placedBy: user?._id ? user._id : "anonymous user",
+        placedAt: new Date().toISOString(),
+      };
+
+      console.log(
+        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
+      );
+
+      return newData;
+    });
+    setTimeout(() => {
+      if (!isReplaying) {
+        prepareReplayPixels();
+      }
+    }, 50);
+  };
 
   // Gestion des événements de redimensionnement, focus et visibilité
   useEffect(() => {
@@ -856,120 +976,6 @@ export const Board = (props: BoardProps) => {
     restoreAllPixels();
   }, [restoreAllPixels]);
 
-  const handleDrawPixel = async (e: React.MouseEvent) => {
-    if (
-      !canvasRef.current ||
-      isLoading ||
-      props.participationTimer > 0 ||
-      isReplaying
-    )
-      return;
-
-    const rect = canvasRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    // Conversion en coordonnées de pixel
-    const pixelX = Math.floor(
-      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current),
-    );
-    const pixelY = Math.floor(
-      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current),
-    );
-
-    // Vérifier si le pixel est dans les limites du tableau
-    if (
-      pixelX < 0 ||
-      pixelX >= props.width ||
-      pixelY < 0 ||
-      pixelY >= props.height
-    ) {
-      console.log(
-        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
-      );
-
-      return;
-    }
-
-    try {
-      await apiService.post(
-        `/pixel-boards/${pixelboardId}/pixels`,
-        JSON.stringify({
-          x: pixelX,
-          y: pixelY,
-          color: selectedColor,
-        }),
-      );
-
-      websocketService.sendMessage(
-        JSON.stringify({
-          type: "update_pixel",
-          pixelBoardId: pixelboardId,
-          x: pixelX,
-          y: pixelY,
-          color: selectedColor,
-        }),
-      );
-    } catch (err) {
-      console.error(err);
-      if (isApiError(err) && err.description.includes("Vous devez attendre")) {
-        const regex = /(\d+)\s*seconde[s]?/i;
-        const match = err.description.match(regex);
-
-        if (match && match[1]) {
-          props.addParticipationDelay(parseInt(match[1], 10));
-        }
-      }
-      return;
-    }
-
-    props.addParticipationDelay();
-
-    // Déterminer dans quel chunk se trouve ce pixel
-    const chunkX = Math.floor(pixelX / visibleChunkSize);
-    const chunkY = Math.floor(pixelY / visibleChunkSize);
-    const chunkKey = `${chunkX},${chunkY}`;
-
-    // Position relative dans le chunk
-    const relativeX = pixelX - chunkX * visibleChunkSize;
-    const relativeY = pixelY - chunkY * visibleChunkSize;
-    const pixelKey = `${relativeX},${relativeY}`;
-
-    // Mise à jour du pixel
-    setPixelData((prevData) => {
-      const newData = { ...prevData };
-
-      if (!newData[chunkKey]) {
-        newData[chunkKey] = { loaded: true, pixels: {} };
-      }
-
-      // S'assurer que l'objet pixels existe et n'est pas undefined
-      if (!newData[chunkKey].pixels) {
-        newData[chunkKey].pixels = {};
-      }
-
-      // Création ou mise à jour du pixel
-      newData[chunkKey].pixels[pixelKey] = {
-        color: selectedColor,
-        x: pixelX,
-        y: pixelY,
-        placedBy: user?._id ? user._id : "anonymous user",
-        placedAt: new Date().toISOString(),
-      };
-
-      console.log(
-        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
-      );
-
-      return newData;
-    });
-    setTimeout(() => {
-      if (!isReplaying) {
-        prepareReplayPixels();
-      }
-    }, 50);
-  };
-
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
       // Clic gauche uniquement
@@ -1046,6 +1052,128 @@ export const Board = (props: BoardProps) => {
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     return false;
+  };
+
+  // Gestionnaire pour toucher l'écran
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      // Enregistrer la position initiale
+      lastMousePosition.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+      };
+
+      // Réinitialiser le flag de déplacement
+      hasDragged.current = false;
+
+      // Par défaut, considérer que c'est un déplacement sur mobile (équivalent à Shift+clic)
+      setIsDragging(true);
+      setDragStart({
+        x: e.touches[0].clientX - offsetRef.current.x,
+        y: e.touches[0].clientY - offsetRef.current.y,
+      });
+    } else if (e.touches.length === 2) {
+      // Zoom à deux doigts - enregistrer la distance initiale
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const initialDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY,
+      );
+
+      // Stocker la distance initiale et le scale actuel
+      lastPinchDistance.current = initialDistance;
+      lastPinchScale.current = scale;
+
+      // Le centre du pinch
+      const centerX = (touch1.clientX + touch2.clientX) / 2;
+      const centerY = (touch1.clientY + touch2.clientY) / 2;
+      pinchCenter.current = { x: centerX, y: centerY };
+    }
+  };
+
+  // Gestionnaire pour le déplacement du doigt
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 1 && isDragging) {
+      // Déplacement avec un doigt
+      const touchX = e.touches[0].clientX;
+      const touchY = e.touches[0].clientY;
+
+      // Calculer la distance parcourue
+      const deltaX = Math.abs(touchX - lastMousePosition.current.x);
+      const deltaY = Math.abs(touchY - lastMousePosition.current.y);
+
+      if (deltaX > 3 || deltaY > 3) {
+        hasDragged.current = true;
+      }
+
+      // Mettre à jour la position
+      setOffset({
+        x: touchX - dragStart.x,
+        y: touchY - dragStart.y,
+      });
+
+      // Mettre à jour la dernière position connue
+      lastMousePosition.current = { x: touchX, y: touchY };
+    } else if (e.touches.length === 2) {
+      // Zoom avec deux doigts
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+
+      // Calculer la nouvelle distance
+      const currentDistance = Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY,
+      );
+
+      // Le ratio de zoom
+      const pinchRatio = currentDistance / lastPinchDistance.current;
+
+      // Calculer le nouveau scale
+      const minScale = calculateMinimumScale();
+      const newScale = Math.max(
+        minScale,
+        Math.min(10, lastPinchScale.current * pinchRatio),
+      );
+
+      if (newScale !== scale) {
+        // Le centre du pinch
+        const centerX = (touch1.clientX + touch2.clientX) / 2;
+        const centerY = (touch1.clientY + touch2.clientY) / 2;
+
+        // Zoom centré sur la position des doigts
+        const newOffsetX = centerX - (centerX - offset.x) * (newScale / scale);
+        const newOffsetY = centerY - (centerY - offset.y) * (newScale / scale);
+
+        setScale(newScale);
+        setOffset({ x: newOffsetX, y: newOffsetY });
+      }
+    }
+  };
+
+  // Gestionnaire pour lever le doigt
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    // Si un seul doigt était posé et qu'il n'y a pas eu de déplacement, c'est un tap
+    if (e.touches.length === 0 && !hasDragged.current) {
+      // Simuler un clic à la dernière position connue
+      const simulatedEvent = {
+        clientX: lastMousePosition.current.x,
+        clientY: lastMousePosition.current.y,
+        preventDefault: () => {},
+      } as React.MouseEvent;
+
+      handleDrawPixel(simulatedEvent);
+    }
+
+    // Réinitialiser l'état de glissement
+    if (e.touches.length === 0) {
+      setIsDragging(false);
+      hasDragged.current = false;
+
+      // Réinitialiser les références de pinch
+      lastPinchDistance.current = 0;
+      lastPinchScale.current = 0;
+    }
   };
 
   const getCursor = () => {
@@ -1161,12 +1289,15 @@ export const Board = (props: BoardProps) => {
         )}
         <canvas
           ref={canvasRef}
-          className={`w-full h-full ${isLoading ? "opacity-0" : ""}`}
+          className={`w-full h-full touch-none ${isLoading ? "opacity-0" : ""}`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseLeave}
           onContextMenu={handleContextMenu}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
         />
       </div>
       <ExportButton onExport={exportToImage} />
