@@ -52,6 +52,7 @@ createRoot(document.getElementById("root")!).render(
               <ProtectedRoute
                 element={<ActivePixelBoardsPage />}
                 roles={["admin", "user"]}
+                allowVisitors={true}
               />
             }
           />
@@ -61,6 +62,7 @@ createRoot(document.getElementById("root")!).render(
               <ProtectedRoute
                 element={<FinishedPixelBoardsPage />}
                 roles={["admin", "user"]}
+                allowVisitors={true}
               />
             }
           />
