@@ -78,7 +78,7 @@ export const VisitorBanner: React.FC = () => {
 
   // Couleur de la bannière selon l'état
   const getBannerColorClass = () => {
-    return "bg-blue-50·dark:bg-blue-900·border-blue-200·dark:border-blue-800";
+    return "bg-blue-700 dark:bg-blue-800 border-blue-600 dark:border-blue-700";
   };
 
   // Texte d'état pour le bouton
@@ -88,7 +88,6 @@ export const VisitorBanner: React.FC = () => {
       return `Prochain: ${formatTime(limits?.timeUntilNextPixel || 0)}`;
     return `${limits?.pixelsRemaining || 0} pixels restants`;
   };
-
   return (
     <>
       {/* Bouton flottant pour afficher la bannière */}
