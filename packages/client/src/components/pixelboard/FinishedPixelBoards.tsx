@@ -2,9 +2,10 @@ import { useState, useEffect } from "react";
 import { NavLink } from "react-router";
 import PixelBoardPreview from "./PixelBoardPreview";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import axios from "axios";
 import "@/index.css";
 import { IPixelBoard } from "@/interfaces/PixelBoard";
+import { apiService } from "@/helpers/request";
+import { PixelBoardsWithPagination } from "@/interfaces/PixelBoardsWithPagination";
 
 const FinishedPixelBoards3DCarousel = () => {
   const [pixelBoards, setPixelBoards] = useState<IPixelBoard[]>([]);
@@ -20,8 +21,8 @@ const FinishedPixelBoards3DCarousel = () => {
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        "http://localhost:8000/api/pixel-boards",
+      const response = await apiService.get<PixelBoardsWithPagination>(
+        "/pixel-boards",
         {
           params: {
             status: "completed",
@@ -29,19 +30,16 @@ const FinishedPixelBoards3DCarousel = () => {
             sortBy: "endDate",
             sortOrder: "desc",
           },
-          withCredentials: true,
         },
       );
 
       const now = new Date();
-      const completedBoards = response.data.data.filter(
-        (board: IPixelBoard) => {
-          return (
-            board.status === "completed" ||
-            (board.status === "active" && new Date(board.endDate) <= now)
-          );
-        },
-      );
+      const completedBoards = response.data.filter((board: IPixelBoard) => {
+        return (
+          board.status === "completed" ||
+          (board.status === "active" && new Date(board.endDate) <= now)
+        );
+      });
 
       setPixelBoards(completedBoards);
       setError(null);
