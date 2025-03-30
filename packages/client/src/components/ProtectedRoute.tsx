@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
   allowVisitors?: boolean;
 }
 
-const ProtectedRoute: react.FC<ProtectedRouteProps> = ({ element, roles, allowVisitors = false  }) => {
+const ProtectedRoute: react.FC<ProtectedRouteProps> = ({element, roles, allowVisitors = false  }) => {
   const { isLoggedIn, user, isLoading } = useAuth();
 
   if (isLoading) {
