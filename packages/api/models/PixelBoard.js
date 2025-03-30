@@ -110,7 +110,7 @@ pixelBoardSchema.methods.placePixel = async function (
   x,
   y,
   color,
-  placerId,
+  userId,
   isVisitor = false,
 ) {
   // Vérifier si les coordonnées sont valides
@@ -123,9 +123,13 @@ pixelBoardSchema.methods.placePixel = async function (
     (pixel) => pixel.x === x && pixel.y === y,
   );
 
+  if (existingPixelIndex >= 0 && !this.allowOverwriting) {
+    throw new Error("Ce pixel est déjà occupé");
+  }
+
   const Contribution = mongoose.model("Contribution");
   const contribution = new Contribution({
-    user: placerId,
+    user: userId,
     pixelBoard: this._id,
     pixelX: x,
     pixelY: y,
@@ -133,30 +137,25 @@ pixelBoardSchema.methods.placePixel = async function (
     timestamp: new Date(),
   });
   console.log("NOUVELLE CONTRIBUTION", contribution);
+
   // Save the contribution
   await contribution.save();
 
   // Update the user with the new contribution
   const User = mongoose.model("User");
-  await User.findByIdAndUpdate(placerId, {
+  await User.findByIdAndUpdate(userId, {
     $push: { contributions: contribution._id },
     $inc: { "stats.pixelPainted": 1, "stats.pixelBoardsParticipated": 1 },
     $set: { "stats.lastPixelTouched": new Date() },
   });
 
-  await mongoose.model("PixelBoard").findByIdAndUpdate(this._id, {
-    $push: { contributions: contribution._id },
-  });
+  // Add the contribution to the contributions array
+  this.contributions.push(contribution._id);
 
   if (existingPixelIndex >= 0) {
-    // Si le pixel existe déjà et que la superposition n'est pas autorisée
-    if (!this.allowOverwriting) {
-      throw new Error("Ce pixel est déjà occupé");
-    }
-
-    // Sinon, mettre à jour le pixel existant
+    // Mettre à jour le pixel existant
     this.pixels[existingPixelIndex].color = color;
-    this.pixels[existingPixelIndex].placedBy = placerId;
+    this.pixels[existingPixelIndex].placedBy = userId;
     this.pixels[existingPixelIndex].isVisitor = isVisitor;
     this.pixels[existingPixelIndex].placedAt = new Date();
   } else {
@@ -165,13 +164,12 @@ pixelBoardSchema.methods.placePixel = async function (
       x,
       y,
       color,
-      placedBy: placerId,
+      placedBy: userId,
       isVisitor,
       placedAt: new Date(),
     });
   }
 
-  this.contributions++;
   return this;
 };
 

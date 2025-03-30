@@ -255,13 +255,11 @@ pixelBoardRouter.post(
           "Coordonnées et couleur requises",
         );
       }
-
       // Recherche le PixelBoard
       const pixelBoard = await PixelBoard.findById(id);
       if (!pixelBoard) {
         throw new ApiErrorException(ApiError.NOT_FOUND, 404);
       }
-
       // Vérifier si le PixelBoard est actif
       if (pixelBoard.status !== "active") {
         throw new ApiErrorException(
@@ -270,7 +268,6 @@ pixelBoardRouter.post(
           "Ce PixelBoard n'est pas actif",
         );
       }
-
       // Vérifier si la date de fin n'est pas dépassée
       if (new Date() > pixelBoard.endDate) {
         throw new ApiErrorException(
@@ -288,8 +285,14 @@ pixelBoardRouter.post(
         if (!canPlace.canPlace) {
           throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
         }
-        // Place le pixel
-        pixelBoard.placePixel(parseInt(x), parseInt(y), color, userId);
+        // Place le pixel avec await
+        await pixelBoard.placePixel(
+          parseInt(x),
+          parseInt(y),
+          color,
+          userId,
+          false,
+        );
       } else if (req.visitor) {
         // Visiteur non connecté
         // Vérifie si le visiteur peut placer un pixel

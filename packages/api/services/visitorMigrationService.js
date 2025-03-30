@@ -2,7 +2,6 @@ import { User } from "../models/User.js";
 import { Visitor } from "../models/Visitor.js";
 import { PixelBoard } from "../models/PixelBoard.js";
 
-
 export const migrateVisitorToUser = async (visitorId, userId) => {
   try {
     const visitor = await Visitor.findOne({ visitorId });
