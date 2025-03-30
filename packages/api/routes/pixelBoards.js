@@ -4,6 +4,8 @@ import { authenticateToken } from "../middleware/token.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError, ApiErrorException } from "../exceptions/ApiErrors.js";
 import { limitVisitorRequests } from "../middleware/visitorLimits.js";
+import { authenticateUserOrVisitor } from "../middleware/token.js";
+import { authenticateVisitor } from "../middleware/visitorAuth.js";
 
 const pixelBoardRouter = express.Router();
 
@@ -236,7 +238,7 @@ pixelBoardRouter.put("/:id", authenticateToken, async (req, res, next) => {
 });
 
 // Route pour placer un pixel (accessible aux utilisateurs connectés ET aux visiteurs)
-pixelBoardRouter.post("/:id/pixels", async (req, res, next) => {
+pixelBoardRouter.post("/:id/pixels", authenticateUserOrVisitor, authenticateVisitor, async (req, res, next) => {
   try {
     const { id } = req.params;
     const { x, y, color } = req.body;
