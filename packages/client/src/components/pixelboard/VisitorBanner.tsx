@@ -69,9 +69,6 @@ export const VisitorBanner: React.FC = () => {
     return `${remainingSeconds}s`;
   };
 
-  // Détermine si on est proche de la limite quotidienne
-  const isNearDailyLimit =
-    limits?.pixelsRemaining !== undefined && limits.pixelsRemaining <= 5;
   // Détermine si on a atteint la limite quotidienne
   const hasReachedDailyLimit =
     limits?.pixelsRemaining !== undefined && limits.pixelsRemaining <= 0;
@@ -81,11 +78,7 @@ export const VisitorBanner: React.FC = () => {
 
   // Couleur de la bannière selon l'état
   const getBannerColorClass = () => {
-    if (hasReachedDailyLimit)
-      return "bg-red-700 dark:bg-red-900 border-red-600 dark:border-red-800";
-    if (isNearDailyLimit)
-      return "bg-orange-700 dark:bg-orange-900 border-orange-600 dark:border-orange-800";
-    return "bg-blue-700 dark:bg-blue-800 border-blue-600 dark:border-blue-700";
+    return 'bg-blue-50 dark:bg-blue-900 border-blue-200 dark:border-blue-800';
   };
 
   // Texte d'état pour le bouton
