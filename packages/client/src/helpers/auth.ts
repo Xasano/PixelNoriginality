@@ -1,17 +1,14 @@
-import axios from "axios";
 import { User } from "../interfaces/User";
+import { apiService, isApiError } from "./request";
 
 const API_BASE_URL = "http://localhost:8000/api";
-
-// Configuration globale d'axios pour les cookies
-axios.defaults.withCredentials = true;
 
 class AuthService {
   // Fonction de connexion
   static async login(email: string, password: string) {
     try {
       // Appel à l'API de connexion
-      await axios.post(`${API_BASE_URL}/auth/login`, { email, password });
+      await apiService.post(`${API_BASE_URL}/auth/login`, { email, password });
 
       // Marquer l'utilisateur comme connecté
       localStorage.setItem("isLoggedIn", "true");
@@ -28,7 +25,7 @@ class AuthService {
   // Fonction d'inscription
   static async register(name: string, email: string, password: string) {
     try {
-      await axios.post(`${API_BASE_URL}/auth/register`, {
+      await apiService.post(`/auth/register`, {
         name,
         email,
         password,
@@ -41,7 +38,7 @@ class AuthService {
   // Fonction de déconnexion
   static async logout() {
     try {
-      await axios.post(`${API_BASE_URL}/auth/logout`);
+      await apiService.post(`/auth/logout`);
       localStorage.removeItem("isLoggedIn");
     } catch (error) {
       console.error("Erreur lors de la déconnexion:", error);
@@ -54,13 +51,8 @@ class AuthService {
   // Obtenir l'utilisateur courant
   static async getCurrentUser(): Promise<User | undefined> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/auth/me`);
-      return response.data as User;
+      return await apiService.get<User>(`/auth/me`);
     } catch (error) {
-      // Si erreur 401 (non autorisé), l'utilisateur n'est pas connecté
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return undefined;
-      }
       // Logguer d'autres types d'erreurs pour le débogage
       console.error("Erreur lors de la récupération de l'utilisateur:", error);
       return undefined;
@@ -80,11 +72,9 @@ class AuthService {
 
   // Gestion centralisée des erreurs d'authentification
   static handleAuthError(error: unknown, operation: string) {
-    if (axios.isAxiosError(error) && error.response) {
-      const { data } = error.response;
-
+    if (isApiError(error)) {
       // Erreurs spécifiques selon le code
-      switch (data.error) {
+      switch (error.error) {
         case "EMAIL_ALREADY_REGISTERED":
           throw new Error("Cet email est déjà utilisé.");
         case "USERNAME_ALREADY_TAKEN":
@@ -96,7 +86,7 @@ class AuthService {
         case "WRONG_EMAIL_OR_PASSWORD":
           throw new Error("Email ou mot de passe incorrect");
         default:
-          throw new Error(data.message || `Erreur lors de l'${operation}`);
+          throw new Error(error.description || `Erreur lors de l'${operation}`);
       }
     }
 

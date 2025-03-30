@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
 import LoadingButton from "./LoadingButton";
 import { ModalProps } from "@interfaces/ModalProps";
+import { apiService } from "@/helpers/request";
 
 interface ProfileFormData {
   id: string;
@@ -62,18 +62,15 @@ const ProfileModal: React.FC<ModalProps> = ({
       setIsSubmitting(true);
       setError(null);
 
-      // Envoi des données avec Axios
-      const response = await axios.put(
-        `http://localhost:8000/api/user/${formData.id}`,
-        {
-          name: formData.name,
-          email: formData.email,
-          prefTheme: formData.prefTheme,
-          avatar: formData.avatar,
-        },
-      );
+      // Envoi des données
+      const data = await apiService.put(`/user/${formData.id}`, {
+        name: formData.name,
+        email: formData.email,
+        prefTheme: formData.prefTheme,
+        avatar: formData.avatar,
+      });
 
-      console.log("Réponse du serveur:", response.data);
+      console.log("Réponse du serveur:", data);
       onClose();
 
       // Rechargement de la page pour afficher les modifications

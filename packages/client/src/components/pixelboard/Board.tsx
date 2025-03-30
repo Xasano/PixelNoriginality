@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ExportButton } from "./ExportButton";
-import axios from "axios";
 import { useAuth } from "@hooks/useAuth";
 import { Pixel } from "@interfaces/Pixel";
+import { apiService } from "@/helpers/request";
 
 interface BoardProps {
   pixelboardId: string;
@@ -551,8 +551,8 @@ export const Board = (props: BoardProps) => {
       return;
     }
 
-    await axios.post(
-      `http://localhost:8000/api/pixel-boards/${props.pixelboardId}/pixels`,
+    await apiService.post(
+      `/pixel-boards/${props.pixelboardId}/pixels`,
       JSON.stringify({
         x: pixelX,
         y: pixelY,

@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { NavLink } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import axios from "axios";
 import "@/index.css";
 import { IPixelBoard } from "@interfaces/PixelBoard";
 import PixelBoardPreview from "./PixelBoardPreview";
+import { apiService } from "@/helpers/request";
+import { PixelBoardsWithPagination } from "@/interfaces/PixelBoardsWithPagination";
 
 const ActivePixelBoards3DCarousel = () => {
   const [pixelBoards, setPixelBoards] = useState<IPixelBoard[]>([]);
@@ -17,8 +18,8 @@ const ActivePixelBoards3DCarousel = () => {
       try {
         setLoading(true);
 
-        const response = await axios.get(
-          "http://localhost:8000/api/pixel-boards",
+        const response = await apiService.get<PixelBoardsWithPagination>(
+          "/pixel-boards",
           {
             params: {
               status: "active",
@@ -26,12 +27,11 @@ const ActivePixelBoards3DCarousel = () => {
               sortBy: "creationDate",
               sortOrder: "desc",
             },
-            withCredentials: true,
           },
         );
 
         const now = new Date();
-        const activeBoards = response.data.data.filter((board: IPixelBoard) => {
+        const activeBoards = response.data.filter((board: IPixelBoard) => {
           return board.status === "active" && new Date(board.endDate) > now;
         });
 
@@ -197,7 +197,7 @@ const ActivePixelBoards3DCarousel = () => {
 
                   return (
                     <div
-                      key={`${board._id}-${index}`}
+                      key={`${board._id}`}
                       className={`carousel-card absolute ${positionClass}`}
                       style={{ zIndex }}
                       onClick={() => {

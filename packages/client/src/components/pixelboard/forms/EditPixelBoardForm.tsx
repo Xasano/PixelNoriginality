@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import axios from "axios";
 import { PixelBoardFormData } from "@interfaces/PixelBoardFormData";
+import { apiService } from "@/helpers/request";
 
 interface EditPixelBoardFormProps {
   onSubmit: (pixelBoardData: PixelBoardFormData) => Promise<void>;
@@ -20,13 +20,13 @@ const EditPixelBoardForm: React.FC<EditPixelBoardFormProps> = ({
     const fetchPixelBoard = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(
-          `http://localhost:8000/api/pixel-boards/${id}`,
+        const data = await apiService.get<PixelBoardFormData>(
+          `/pixel-boards/${id}`,
           {
             withCredentials: true,
           },
         );
-        setFormData(response.data);
+        setFormData(data);
       } catch (err) {
         console.error(err);
         setError("Impossible de charger les données du PixelBoard");
