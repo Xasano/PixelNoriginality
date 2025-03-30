@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import { contributionSchema } from "./Contribution.js";
 
 const pixelSchema = new Schema({
   x: { type: Number, required: true },
@@ -44,10 +45,10 @@ const pixelBoardSchema = new Schema({
     min: 10, // Minimum 10 seconds
   },
   pixels: [pixelSchema],
-  contributions: {
-    type: Number,
-    default: 0,
-  },
+  contributions: [{
+    type: Schema.Types.ObjectId,
+    ref: "Contribution"
+  }],
 });
 
 // Créer un index composite pour garantir qu'un pixel ne peut exister qu'une fois à une coordonnée spécifique
@@ -103,7 +104,7 @@ pixelBoardSchema.methods.canUserPlacePixel = function (userId) {
 };
 
 // Méthode pour placer un pixel
-pixelBoardSchema.methods.placePixel = function (x, y, color, userId) {
+pixelBoardSchema.methods.placePixel = async function (x, y, color, userId) {
   // Vérifier si les coordonnées sont valides
   if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
     throw new Error("Coordonnées de pixel invalides");
@@ -112,6 +113,38 @@ pixelBoardSchema.methods.placePixel = function (x, y, color, userId) {
   // Vérifier si cette position est déjà occupée
   const existingPixelIndex = this.pixels.findIndex(
     (pixel) => pixel.x === x && pixel.y === y,
+  );
+
+  const Contribution = mongoose.model("Contribution");
+  const contribution = new Contribution({
+    user: userId,
+    pixelBoard: this._id,
+    pixelX: x,
+    pixelY: y,
+    color,
+    timestamp: new Date(),
+  });
+  console.log("NOUVELLE CONTRIBUTION", contribution);
+  // Save the contribution
+  await contribution.save();
+
+  // Update the user with the new contribution
+  const User = mongoose.model("User");
+  await User.findByIdAndUpdate(
+    userId,
+    {
+      $push: { contributions: contribution._id },
+      $inc: { "stats.pixelPainted": 1 },
+      $set: { "stats.lastPixelTouched": new Date() },
+      $inc: { "stats.pixelBoardsParticipated": 1 }  // This will add the board ID only if it's not already there
+    }
+  );
+
+  await mongoose.model("PixelBoard").findByIdAndUpdate(
+    this._id,
+    { 
+      $push: { contributions: contribution._id }
+    }
   );
 
   if (existingPixelIndex >= 0) {
@@ -135,7 +168,6 @@ pixelBoardSchema.methods.placePixel = function (x, y, color, userId) {
     });
   }
 
-  this.contributions++;
   return this;
 };
 
