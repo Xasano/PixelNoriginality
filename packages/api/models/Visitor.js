@@ -47,6 +47,11 @@ const visitorSchema = new Schema({
     ref: "PixelBoard",
     default: null,
   },
+  migratedToUser: {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
 });
 
 // Méthode qui verifie si le visiteur peut placer un pixel

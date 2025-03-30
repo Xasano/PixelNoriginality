@@ -9,6 +9,8 @@ import {
   authenticateToken,
 } from "../middleware/token.js";
 import { User } from "../models/User.js";
+import { migrateVisitorToUser } from "../services/visitorMigrationService.js";
+import { clearVisitorSession } from "../services/sessionService.js";
 
 const authRouter = express.Router();
 
@@ -97,6 +99,15 @@ authRouter.post("/register", async (req, res, next) => {
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
+
+    // Vérifier si l'utilisateur était un visiteur
+    if (req.visitorId) {
+      // Migrer les données du visiteur
+      await migrateVisitorToUser(req.visitorId, user._id);
+
+      // Supprimer la session visiteur
+      clearVisitorSession(res);
+    }
 
     res.cookie("accessToken", accessToken);
     res.cookie("refreshToken", refreshToken, {
@@ -262,4 +273,4 @@ function generateRefreshToken(user) {
   );
 }
 
-export { authRouter };
+export { authRouter, generateAccessToken, generateRefreshToken };
