@@ -10,7 +10,7 @@ export const ApiError = {
   NOT_FOUND: "NOT_FOUND",
   SAME_PASSWORD: "SAME_PASSWORD",
   TOO_MANY_REQUESTS: "TOO_MANY_REQUESTS",
-  DAILY_LIMIT_EXCEEDED: "DAILY_LIMIT_EXCEEDED"
+  DAILY_LIMIT_EXCEEDED: "DAILY_LIMIT_EXCEEDED",
 };
 
 export const ApiErrorDescription = {
@@ -24,8 +24,10 @@ export const ApiErrorDescription = {
   [ApiError.FORBIDDEN]: "Accès forbiden",
   [ApiError.NOT_FOUND]: "Resource not found",
   [ApiError.SAME_PASSWORD]: "New password is the same as the old one",
-  [ApiError.TOO_MANY_REQUESTS]: "Trop de requêtes. Veuillez réessayer plus tard.",
-  [ApiError.DAILY_LIMIT_EXCEEDED]: "Limite quotidienne atteinte. Veuillez réessayer demain ou créer un compte."
+  [ApiError.TOO_MANY_REQUESTS]:
+    "Trop de requêtes. Veuillez réessayer plus tard.",
+  [ApiError.DAILY_LIMIT_EXCEEDED]:
+    "Limite quotidienne atteinte. Veuillez réessayer demain ou créer un compte.",
 };
 
 export class ApiErrorException extends Error {

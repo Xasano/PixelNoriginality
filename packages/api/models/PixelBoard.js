@@ -1,12 +1,12 @@
 import mongoose, { Schema } from "mongoose";
 
 const pixelSchema = new Schema({
-    x: { type: Number, required: true },
-    y: { type: Number, required: true },
-    color: { type: String, required: true },
-    placedBy: { type: Schema.Types.ObjectId, ref: "User" },
-    isVisitor: { type: Boolean, default: false },
-    placedAt: { type: Date, default: Date.now }
+  x: { type: Number, required: true },
+  y: { type: Number, required: true },
+  color: { type: String, required: true },
+  placedBy: { type: Schema.Types.ObjectId, ref: "User" },
+  isVisitor: { type: Boolean, default: false },
+  placedAt: { type: Date, default: Date.now },
 });
 
 const pixelBoardSchema = new Schema({
@@ -106,11 +106,17 @@ pixelBoardSchema.methods.canUserPlacePixel = function (userId) {
 };
 
 // Méthode pour placer un pixel
-pixelBoardSchema.methods.placePixel = function(x, y, color, placerId, isVisitor = false) {
-    // Vérifier si les coordonnées sont valides
-    if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
-        throw new Error("Coordonnées de pixel invalides");
-    }
+pixelBoardSchema.methods.placePixel = function (
+  x,
+  y,
+  color,
+  placerId,
+  isVisitor = false,
+) {
+  // Vérifier si les coordonnées sont valides
+  if (x < 0 || x >= this.width || y < 0 || y >= this.height) {
+    throw new Error("Coordonnées de pixel invalides");
+  }
 
   // Vérifier si cette position est déjà occupée
   const existingPixelIndex = this.pixels.findIndex(
@@ -148,22 +154,22 @@ pixelBoardSchema.methods.placePixel = function(x, y, color, placerId, isVisitor 
       throw new Error("Ce pixel est déjà occupé");
     }
 
-        // Sinon, mettre à jour le pixel existant
-        this.pixels[existingPixelIndex].color = color;
-        this.pixels[existingPixelIndex].placedBy = placerId;
-        this.pixels[existingPixelIndex].isVisitor = isVisitor;
-        this.pixels[existingPixelIndex].placedAt = new Date();
-    } else {
-        // Ajouter un nouveau pixel
-        this.pixels.push({
-            x,
-            y,
-            color,
-            placedBy: placerId,
-            isVisitor,
-            placedAt: new Date()
-        });
-    }
+    // Sinon, mettre à jour le pixel existant
+    this.pixels[existingPixelIndex].color = color;
+    this.pixels[existingPixelIndex].placedBy = placerId;
+    this.pixels[existingPixelIndex].isVisitor = isVisitor;
+    this.pixels[existingPixelIndex].placedAt = new Date();
+  } else {
+    // Ajouter un nouveau pixel
+    this.pixels.push({
+      x,
+      y,
+      color,
+      placedBy: placerId,
+      isVisitor,
+      placedAt: new Date(),
+    });
+  }
 
   this.contributions++;
   return this;

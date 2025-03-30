@@ -3,10 +3,7 @@ import { PixelBoard } from "../models/PixelBoard.js";
 import { authenticateToken } from "../middleware/token.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError, ApiErrorException } from "../exceptions/ApiErrors.js";
-import {
-  limitVisitorRequests,
-  restrictVisitorAccess,
-} from "../middleware/visitorLimits.js";
+import { limitVisitorRequests } from "../middleware/visitorLimits.js";
 
 const pixelBoardRouter = express.Router();
 
