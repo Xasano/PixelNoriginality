@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link } from 'react-router';
+import React from "react";
+import { Link } from "react-router";
 
 const NotFound: React.FC = () => {
   return (
@@ -23,15 +23,15 @@ const NotFound: React.FC = () => {
             </svg>
           </div>
         </div>
-        
+
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4">
           Page Non Trouvée
         </h1>
-        
+
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
         </p>
-        
+
         <div className="flex flex-col space-y-4">
           <button
             className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md transition-colors duration-200"
@@ -39,8 +39,8 @@ const NotFound: React.FC = () => {
           >
             Retour en arrière
           </button>
-          
-          <Link 
+
+          <Link
             to="/"
             className="bg-transparent hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 transition-colors duration-200"
           >
