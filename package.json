@@ -6,7 +6,7 @@
   "scripts": {
     "start:client": "npm run dev --workspace=client",
     "start:api": "npm start --workspace=api",
-    "start:ws": "npm start --workspace=websocket-server",
+    "start:ws": "npm start --workspace=websocket",
     "lint": "npm run lint --workspaces",
     "lint:fix": "npm run lint:fix --workspaces"
   },
