@@ -3,11 +3,14 @@ import { PixelBoard } from "../models/PixelBoard.js";
 import { authenticateToken } from "../middleware/token.js";
 import { requireAdmin } from "../middleware/requireAdmin.js";
 import { ApiError, ApiErrorException } from "../exceptions/ApiErrors.js";
+import { limitVisitorRequests } from "../middleware/visitorLimits.js";
+import { authenticateUserOrVisitor } from "../middleware/token.js";
+import { authenticateVisitor } from "../middleware/visitorAuth.js";
 
 const pixelBoardRouter = express.Router();
 
 // Récupère tous les PixelBoards
-pixelBoardRouter.get("/", async (req, res, next) => {
+pixelBoardRouter.get("/", limitVisitorRequests(30), async (req, res, next) => {
   try {
     const {
       status,
@@ -61,21 +64,25 @@ pixelBoardRouter.get("/", async (req, res, next) => {
 });
 
 // Récupère un PixelBoard par son ID
-pixelBoardRouter.get("/:id", async (req, res, next) => {
-  try {
-    const pixelBoard = await PixelBoard.findById(req.params.id)
-      .populate("author", "name")
-      .exec();
+pixelBoardRouter.get(
+  "/:id",
+  limitVisitorRequests(30),
+  async (req, res, next) => {
+    try {
+      const pixelBoard = await PixelBoard.findById(req.params.id)
+        .populate("author", "name")
+        .exec();
 
-    if (!pixelBoard) {
-      throw new ApiErrorException(ApiError.NOT_FOUND, 404);
+      if (!pixelBoard) {
+        throw new ApiErrorException(ApiError.NOT_FOUND, 404);
+      }
+
+      res.json(pixelBoard);
+    } catch (err) {
+      next(err);
     }
-
-    res.json(pixelBoard);
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
 
 // Créer un nouveau PixelBoard
 pixelBoardRouter.post("/", authenticateToken, async (req, res, next) => {
@@ -233,12 +240,12 @@ pixelBoardRouter.put("/:id", authenticateToken, async (req, res, next) => {
 // Route pour placer un pixel
 pixelBoardRouter.post(
   "/:id/pixels",
-  authenticateToken,
+  authenticateUserOrVisitor,
+  authenticateVisitor,
   async (req, res, next) => {
     try {
       const { id } = req.params;
       const { x, y, color } = req.body;
-      const userId = req.user.id;
 
       // Valide les paramètres requis
       if (x === undefined || y === undefined || !color) {
@@ -248,21 +255,99 @@ pixelBoardRouter.post(
           "Coordonnées et couleur requises",
         );
       }
-
       // Recherche le PixelBoard
       const pixelBoard = await PixelBoard.findById(id);
       if (!pixelBoard) {
         throw new ApiErrorException(ApiError.NOT_FOUND, 404);
       }
-
-      // Vérifie si l'utilisateur peut placer un pixel
-      const canPlace = pixelBoard.canUserPlacePixel(userId);
-      if (!canPlace.canPlace) {
-        throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
+      // Vérifier si le PixelBoard est actif
+      if (pixelBoard.status !== "active") {
+        throw new ApiErrorException(
+          ApiError.FORBIDDEN,
+          403,
+          "Ce PixelBoard n'est pas actif",
+        );
+      }
+      // Vérifier si la date de fin n'est pas dépassée
+      if (new Date() > pixelBoard.endDate) {
+        throw new ApiErrorException(
+          ApiError.FORBIDDEN,
+          403,
+          "Ce PixelBoard est terminé",
+        );
       }
 
-      // Place le pixel
-      pixelBoard.placePixel(parseInt(x), parseInt(y), color, userId);
+      if (req.user) {
+        // Utilisateur connecté
+        const userId = req.user.id;
+        // Vérifie si l'utilisateur peut placer un pixel
+        const canPlace = pixelBoard.canUserPlacePixel(userId);
+        if (!canPlace.canPlace) {
+          throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
+        }
+        // Place le pixel avec await
+        await pixelBoard.placePixel(
+          parseInt(x),
+          parseInt(y),
+          color,
+          userId,
+          false,
+        );
+      } else if (req.visitor) {
+        // Visiteur non connecté
+        // Vérifie si le visiteur peut placer un pixel
+        const canPlace = req.visitor.canPlacePixel(
+          pixelBoard.participationDelay,
+        );
+        if (!canPlace.canPlace) {
+          throw new ApiErrorException(ApiError.FORBIDDEN, 403, canPlace.reason);
+        }
+
+        // Pour les visiteurs, au lieu d'utiliser placePixel avec l'ID visiteur,
+        // manipulez directement le tableau de pixels
+        const pixelX = parseInt(x);
+        const pixelY = parseInt(y);
+        // Vérifier si cette position est déjà occupée
+        const existingPixelIndex = pixelBoard.pixels.findIndex(
+          (pixel) => pixel.x === pixelX && pixel.y === pixelY,
+        );
+
+        if (existingPixelIndex >= 0) {
+          // Si le pixel existe déjà et que la superposition n'est pas autorisée
+          if (!pixelBoard.allowOverwriting) {
+            throw new ApiErrorException(
+              ApiError.FORBIDDEN,
+              403,
+              "Ce pixel est déjà occupé",
+            );
+          }
+          // Mettre à jour le pixel existant
+          pixelBoard.pixels[existingPixelIndex].color = color;
+          pixelBoard.pixels[existingPixelIndex].isVisitor = true;
+          pixelBoard.pixels[existingPixelIndex].placedAt = new Date();
+          // Ne pas modifier placedBy
+        } else {
+          // Ajouter un nouveau pixel (sans placedBy pour les visiteurs)
+          pixelBoard.pixels.push({
+            x: pixelX,
+            y: pixelY,
+            color,
+            isVisitor: true,
+            placedAt: new Date(),
+          });
+        }
+        // Enregistrer le placement de pixel par le visiteur
+        await req.visitor.recordPixelPlacement(pixelBoard._id);
+      } else {
+        // Ni utilisateur connecté ni visiteur identifié
+        throw new ApiErrorException(
+          ApiError.UNAUTHORIZED,
+          401,
+          "Vous devez être connecté ou avoir une session visiteur valide pour placer un pixel",
+        );
+      }
+
+      // Enregistrer les modifications du PixelBoard
       await pixelBoard.save();
 
       res.json({
@@ -270,55 +355,60 @@ pixelBoardRouter.post(
         message: "Pixel placé avec succès",
         boardId: pixelBoard._id,
         pixel: {
-          x,
-          y,
+          x: parseInt(x),
+          y: parseInt(y),
           color,
         },
       });
     } catch (err) {
+      console.error("Erreur dans la route de placement de pixels:", err);
       next(err);
     }
   },
 );
 
 // Obtenir des statistiques sur un PixelBoard
-pixelBoardRouter.get("/:id/stats", async (req, res, next) => {
-  try {
-    const pixelBoard = await PixelBoard.findById(req.params.id);
+pixelBoardRouter.get(
+  "/:id/stats",
+  limitVisitorRequests(30),
+  async (req, res, next) => {
+    try {
+      const pixelBoard = await PixelBoard.findById(req.params.id);
 
-    if (!pixelBoard) {
-      throw new ApiErrorException(ApiError.NOT_FOUND, 404);
+      if (!pixelBoard) {
+        throw new ApiErrorException(ApiError.NOT_FOUND, 404);
+      }
+
+      // Calcul des statistiques
+      const totalPixels = pixelBoard.pixels.length;
+      const totalPossiblePixels = pixelBoard.width * pixelBoard.height;
+      const completionPercentage = (totalPixels / totalPossiblePixels) * 100;
+
+      // Obtenir les contributeurs uniques
+      const contributorIds = pixelBoard.getContributors();
+      const contributorCount = contributorIds.length;
+
+      // Calcul le temps restant
+      const now = new Date();
+      const timeRemainingMs = pixelBoard.endDate.getTime() - now.getTime();
+      const timeRemainingDays = Math.max(
+        0,
+        Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24)),
+      );
+
+      res.json({
+        totalPixels,
+        totalPossiblePixels,
+        completionPercentage,
+        contributorCount,
+        timeRemainingDays,
+        isActive: pixelBoard.status === "active" && now < pixelBoard.endDate,
+      });
+    } catch (err) {
+      next(err);
     }
-
-    // Calcul des statistiques
-    const totalPixels = pixelBoard.pixels.length;
-    const totalPossiblePixels = pixelBoard.width * pixelBoard.height;
-    const completionPercentage = (totalPixels / totalPossiblePixels) * 100;
-
-    // Obtenir les contributeurs uniques
-    const contributorIds = pixelBoard.getContributors();
-    const contributorCount = contributorIds.length;
-
-    // Calcul le temps restant
-    const now = new Date();
-    const timeRemainingMs = pixelBoard.endDate.getTime() - now.getTime();
-    const timeRemainingDays = Math.max(
-      0,
-      Math.floor(timeRemainingMs / (1000 * 60 * 60 * 24)),
-    );
-
-    res.json({
-      totalPixels,
-      totalPossiblePixels,
-      completionPercentage,
-      contributorCount,
-      timeRemainingDays,
-      isActive: pixelBoard.status === "active" && now < pixelBoard.endDate,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+  },
+);
 
 // Supprimer un PixelBoard - accessible aux auteurs ou aux administrateurs
 pixelBoardRouter.delete("/:id", authenticateToken, async (req, res, next) => {

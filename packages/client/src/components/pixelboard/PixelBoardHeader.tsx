@@ -1,13 +1,15 @@
+import { VisitorLimits } from "@/interfaces/VisitorLimits";
 import { useEffect, useState } from "react";
 
 interface PixelBoardHeaderProps {
   name: string;
   endDate: string;
   participationTimer: number;
+  limits: VisitorLimits | null;
 }
 
 export const PixelBoardHeader = (props: PixelBoardHeaderProps) => {
-  const { name, endDate, participationTimer } = props;
+  const { name, endDate, participationTimer, limits } = props;
   const [dateTimer, setDateTimer] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -37,7 +39,13 @@ export const PixelBoardHeader = (props: PixelBoardHeaderProps) => {
         <h2 className="font-bold">{name}</h2>
       </div>
       {participationTimer === 0 ? (
-        <p className="font-semibold">✏ You can draw !</p>
+        <p className="font-semibold">
+          {limits
+            ? limits.pixelsRemaining > 0
+              ? `✏ You can draw ! (${limits.pixelsRemaining} left)`
+              : "Limits reached"
+            : "✏ You can draw !"}
+        </p>
       ) : (
         <div className="flex flex-col justify-center items-center">
           <p className="font-light">Participation timer</p>

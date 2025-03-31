@@ -5,20 +5,25 @@ import { Navigate } from "react-router";
 interface ProtectedRouteProps {
   element: react.ReactElement;
   roles: string[];
+  allowVisitors?: boolean;
 }
 
-const ProtectedRoute: react.FC<ProtectedRouteProps> = ({ element, roles }) => {
+const ProtectedRoute: react.FC<ProtectedRouteProps> = ({
+  element,
+  roles,
+  allowVisitors = false,
+}) => {
   const { isLoggedIn, user, isLoading } = useAuth();
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (!isLoggedIn) {
+  if (!isLoggedIn && !allowVisitors) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user || !roles.includes(user.role)) {
+  if (isLoggedIn && (!user || !roles.includes(user.role))) {
     return <Navigate to="/unauthorized" replace />;
   }
 

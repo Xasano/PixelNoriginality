@@ -21,6 +21,28 @@ export const authenticateToken = (req, res, next) => {
   });
 };
 
+export const authenticateUserOrVisitor = (req, res, next) => {
+  const accessToken = req.cookies.accessToken;
+
+  if (accessToken) {
+    const blacklistedTokens = req.app.locals.blacklistedTokens || [];
+    if (blacklistedTokens.includes(accessToken)) {
+      return next();
+    }
+
+    jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
+      if (err) {
+        return next();
+      }
+
+      req.user = user;
+      return next();
+    });
+  } else {
+    return next();
+  }
+};
+
 export const authenticateRefreshToken = (req, res, next) => {
   const token = req.cookies.refreshToken;
 
