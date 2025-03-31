@@ -6,7 +6,7 @@ const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 async function main() {
   try {
     // Démarrer le serveur WebSocket
-    const server = websocketService.initServer(PORT);
+    websocketService.initServer(PORT);
     console.log(`Serveur démarré sur le port ${PORT}`);
 
     // Gestion de l'arrêt propre

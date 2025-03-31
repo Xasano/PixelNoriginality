@@ -42,7 +42,7 @@ _call start script in ./packages/api package.json (to start the api)_
 If you want to add library you can use the following commands (in the root directory of the project) :
 
 ```js
-npm install <package-name> --workspace=<client|api>
+npm install <package-name> --workspace=<client|api|websocket>
 ```
 
 For example to add `express` to the api package you can run:

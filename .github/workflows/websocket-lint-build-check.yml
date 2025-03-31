@@ -1,11 +1,11 @@
-name: Lint API
+name: Lint WebSocket
 
 on:
   pull_request:
 
 jobs:
   build:
-    name: Lint API
+    name: Lint WebSocket
     runs-on: ubuntu-latest
 
     steps:
@@ -24,10 +24,10 @@ jobs:
 
       - name: Lint
         run: |
-          npm run lint --workspace=api
+          npm run lint --workspace=websocket
 
       - name: Créer un artefact de succès
         uses: actions/upload-artifact@v4
         with:
-          name: lint-and-build-success
+          name: websocket-lint-and-build-success
           path: success.txt
