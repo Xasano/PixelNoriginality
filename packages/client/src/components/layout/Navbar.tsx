@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { FaUserPlus, FaPlusCircle, FaCog, FaUser } from "react-icons/fa";
+import {
+  FaUserPlus,
+  FaPlusCircle,
+  FaCog,
+  FaUser,
+  FaBars,
+  FaTimes,
+} from "react-icons/fa";
 import { MdLogin, MdLogout } from "react-icons/md";
 import { BsMoonFill, BsSunFill } from "react-icons/bs";
 import { NavLink, useLocation, useNavigate } from "react-router";
@@ -9,6 +16,7 @@ export const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Utiliser le contexte d'authentification
   const { isLoggedIn, isAdmin, logout } = useAuth();
@@ -43,7 +51,6 @@ export const Navbar = () => {
     };
 
     if (header && location.pathname === "/") {
-      // Si le subtitle existe et qu'on est sur la page d'accueil, utiliser l'IntersectionObserver API
       const observer = new IntersectionObserver(
         ([entry]) => {
           setIsScrolled(!entry.isIntersecting);
@@ -100,6 +107,10 @@ export const Navbar = () => {
   // Vérifier si on est sur la page de profil
   const isProfilePage = location.pathname === "/me";
 
+  // Style commun pour tous les boutons
+  const buttonClass =
+    "p-2 rounded-full hover:bg-gray-200/60 dark:hover:bg-gray-800/60 transition-all duration-200";
+
   return (
     <div className="fixed top-0 left-0 right-0 z-20 flex justify-center">
       <nav
@@ -108,7 +119,7 @@ export const Navbar = () => {
           transition-all duration-200
           ${
             isScrolled
-              ? "bg-white dark:bg-black shadow-md rounded-md w-3/4 mt-4"
+              ? "bg-white/95 dark:bg-black/95 backdrop-blur-sm shadow-md rounded-md w-full sm:w-11/12 md:w-5/6 lg:w-3/4 mt-4"
               : "bg-transparent w-full"
           }
           dark:text-white
@@ -133,14 +144,99 @@ export const Navbar = () => {
             </span>
           )}
         </div>
-        <div className="flex items-center space-x-4">
+
+        {/* Bouton hamburger pour mobile */}
+        <button
+          className="sm:hidden flex items-center justify-center p-2 rounded-full hover:bg-gray-200/60 dark:hover:bg-gray-800/60"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+        >
+          {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
+
+        {/* Menu mobile */}
+        <div
+          className={`z-50 sm:hidden absolute top-16 right-0 bg-white dark:bg-gray-900 shadow-lg rounded-bl-lg p-2 transition-transform duration-300 transform ${
+            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          }`}
+        >
+          <div className="flex flex-col space-y-2 p-2">
+            {isAdmin && (
+              <>
+                <NavLink to="/pixel-boards/create">
+                  <button className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <FaPlusCircle />
+                    <span>Créer un PixelBoard</span>
+                  </button>
+                </NavLink>
+                <NavLink to="/pixel-boards">
+                  <button className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <FaCog />
+                    <span>Administration</span>
+                  </button>
+                </NavLink>
+              </>
+            )}
+
+            {isLoggedIn ? (
+              <>
+                {!isProfilePage && (
+                  <NavLink to="/me">
+                    <button className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                      <FaUser />
+                      <span>Mon profil</span>
+                    </button>
+                  </NavLink>
+                )}
+                <button
+                  className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+                  onClick={handleLogout}
+                >
+                  <MdLogout />
+                  <span>Se déconnecter</span>
+                </button>
+              </>
+            ) : (
+              <>
+                <NavLink to="/login">
+                  <button className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <MdLogin />
+                    <span>Se connecter</span>
+                  </button>
+                </NavLink>
+                <NavLink to="/register">
+                  <button className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+                    <FaUserPlus />
+                    <span>S'inscrire</span>
+                  </button>
+                </NavLink>
+              </>
+            )}
+
+            <button
+              className="gap-x-2 flex items-center w-full text-left px-3 py-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800"
+              onClick={handleThemeToggle}
+            >
+              {isDarkTheme ? (
+                <>
+                  <BsSunFill />
+                  <span>Thème clair</span>
+                </>
+              ) : (
+                <>
+                  <BsMoonFill />
+                  <span>Thème sombre</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Boutons pour écrans plus grands */}
+        <div className="hidden sm:flex items-center space-x-1 sm:space-x-2 md:space-x-3">
           {/* Afficher le bouton "Créer un PixelBoard" uniquement pour les administrateurs */}
           {isAdmin && (
             <NavLink to="/pixel-boards/create">
-              <button
-                className="px-4 py-2 bg-purple-500 text-white rounded-md hover:bg-purple-600"
-                title="Créer un PixelBoard"
-              >
+              <button className={buttonClass} title="Créer un PixelBoard">
                 <FaPlusCircle />
               </button>
             </NavLink>
@@ -149,10 +245,7 @@ export const Navbar = () => {
           {/* Afficher le bouton "Administration" uniquement pour les administrateurs */}
           {isAdmin && (
             <NavLink to="/pixel-boards">
-              <button
-                className="px-4 py-2 bg-orange-500 text-white rounded-md hover:bg-orange-600"
-                title="Administration"
-              >
+              <button className={buttonClass} title="Administration">
                 <FaCog />
               </button>
             </NavLink>
@@ -164,16 +257,13 @@ export const Navbar = () => {
               {/* Bouton pour accéder au profil - ne pas afficher si on est déjà sur /me */}
               {!isProfilePage && (
                 <NavLink to="/me">
-                  <button
-                    className="px-4 py-2 bg-teal-500 text-white rounded-md hover:bg-teal-600"
-                    title="Mon profil"
-                  >
+                  <button className={buttonClass} title="Mon profil">
                     <FaUser />
                   </button>
                 </NavLink>
               )}
               <button
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                className={buttonClass}
                 onClick={handleLogout}
                 title="Se déconnecter"
               >
@@ -184,18 +274,12 @@ export const Navbar = () => {
             // Utilisateur non connecté
             <>
               <NavLink to="/login">
-                <button
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                  title="Se connecter"
-                >
+                <button className={buttonClass} title="Se connecter">
                   <MdLogin />
                 </button>
               </NavLink>
               <NavLink to="/register">
-                <button
-                  className="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600"
-                  title="S'inscrire"
-                >
+                <button className={buttonClass} title="S'inscrire">
                   <FaUserPlus />
                 </button>
               </NavLink>
@@ -204,7 +288,7 @@ export const Navbar = () => {
 
           {/* Bouton thème */}
           <button
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            className={buttonClass}
             onClick={handleThemeToggle}
             title={
               isDarkTheme ? "Passer au thème clair" : "Passer au thème sombre"
