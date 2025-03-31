@@ -745,7 +745,11 @@ const PixelBoardList: React.FC<PixelBoardListProps> = ({
                       <tr
                         key={board._id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                        onClick={() => navigate(`/pixel-board/${board._id}`)}
+                        onClick={() => {
+                          if (board.status === "active") {
+                            navigate(`/pixel-board/${board._id}`);
+                          }
+                        }}
                         style={{ cursor: "pointer" }}
                       >
                         <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
