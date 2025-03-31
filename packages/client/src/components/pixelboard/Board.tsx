@@ -155,10 +155,10 @@ export const Board = (props: BoardProps) => {
 
     // Conversion en coordonnées de pixel
     const pixelX = Math.floor(
-      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current)
+      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current),
     );
     const pixelY = Math.floor(
-      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current)
+      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current),
     );
 
     // Vérifier si le pixel est dans les limites du tableau
@@ -169,7 +169,7 @@ export const Board = (props: BoardProps) => {
       pixelY >= props.height
     ) {
       console.log(
-        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`
+        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
       );
       return;
     }
@@ -184,7 +184,7 @@ export const Board = (props: BoardProps) => {
           x: pixelX,
           y: pixelY,
           color: selectedColor,
-        })
+        }),
       );
 
       websocketService.sendMessage(
@@ -194,7 +194,7 @@ export const Board = (props: BoardProps) => {
           x: pixelX,
           y: pixelY,
           color: selectedColor,
-        })
+        }),
       );
     } catch (err) {
       console.error(err);
@@ -247,7 +247,7 @@ export const Board = (props: BoardProps) => {
       newData[chunkKey].pixels[pixelKey] = newPixel;
 
       console.log(
-        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`
+        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
       );
 
       return newData;
@@ -261,7 +261,7 @@ export const Board = (props: BoardProps) => {
           const dateA = new Date(a.placedAt || 0).getTime();
           const dateB = new Date(b.placedAt || 0).getTime();
           return dateA - dateB;
-        }
+        },
       );
 
       replayPixelsRef.current = updatedReplayPixels;
@@ -292,7 +292,7 @@ export const Board = (props: BoardProps) => {
         const minY = Math.floor(-offsetRef.current.y / scaledPixelSize);
         const maxX = Math.ceil((width - offsetRef.current.x) / scaledPixelSize);
         const maxY = Math.ceil(
-          (height - offsetRef.current.y) / scaledPixelSize
+          (height - offsetRef.current.y) / scaledPixelSize,
         );
 
         setViewport({ width, height, minX, minY, maxX, maxY });
@@ -376,11 +376,11 @@ export const Board = (props: BoardProps) => {
         window.removeEventListener("focus", handleVisibilityOrFocus);
         document.removeEventListener(
           "visibilitychange",
-          handleVisibilityChange
+          handleVisibilityChange,
         );
         document.removeEventListener(
           "visibilitychange",
-          handleVisibilityOrFocus
+          handleVisibilityOrFocus,
         );
 
         if (animationFrameIdRef.current) {
@@ -834,7 +834,7 @@ export const Board = (props: BoardProps) => {
       pixels.forEach((pixel) => {
         const exists = allPixels.some(
           (p) =>
-            p.x === pixel.x && p.y === pixel.y && p.placedAt === pixel.placedAt
+            p.x === pixel.x && p.y === pixel.y && p.placedAt === pixel.placedAt,
         );
 
         if (!exists) {
@@ -889,7 +889,7 @@ export const Board = (props: BoardProps) => {
       // Continuer l'animation
       animationFrameRef.current = requestAnimationFrame(animateReplay);
     },
-    [isReplaying, currentReplayIndex, replaySpeed, addReplayPixel]
+    [isReplaying, currentReplayIndex, replaySpeed, addReplayPixel],
   );
 
   // Fonction pour démarrer le replay
@@ -904,7 +904,7 @@ export const Board = (props: BoardProps) => {
     }
 
     console.log(
-      `Démarrage du replay avec ${replayPixelsRef.current.length} pixels`
+      `Démarrage du replay avec ${replayPixelsRef.current.length} pixels`,
     );
 
     // Log some sample timestamps for debugging
@@ -1112,7 +1112,7 @@ export const Board = (props: BoardProps) => {
       const touch2 = e.touches[1];
       const initialDistance = Math.hypot(
         touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
+        touch2.clientY - touch1.clientY,
       );
 
       // Stocker la distance initiale et le scale actuel
@@ -1157,7 +1157,7 @@ export const Board = (props: BoardProps) => {
       // Calculer la nouvelle distance
       const currentDistance = Math.hypot(
         touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
+        touch2.clientY - touch1.clientY,
       );
 
       // Le ratio de zoom
@@ -1167,7 +1167,7 @@ export const Board = (props: BoardProps) => {
       const minScale = calculateMinimumScale();
       const newScale = Math.max(
         minScale,
-        Math.min(10, lastPinchScale.current * pinchRatio)
+        Math.min(10, lastPinchScale.current * pinchRatio),
       );
 
       if (newScale !== scale) {
@@ -1280,7 +1280,7 @@ export const Board = (props: BoardProps) => {
             colorGroups[pixel.color] = [];
           }
           colorGroups[pixel.color].push(
-            `<rect x="${pixel.x}" y="${pixel.y}" width="1" height="1"/>`
+            `<rect x="${pixel.x}" y="${pixel.y}" width="1" height="1"/>`,
           );
         }
 
