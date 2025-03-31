@@ -1,72 +1,31 @@
+import { VisitorLimits } from "@/interfaces/VisitorLimits";
 import React, { useState, useEffect } from "react";
-import { useAuth } from "@hooks/useAuth";
-import { apiService } from "@/helpers/request";
 
-interface VisitorLimits {
-  dailyPixelLimit: number;
-  pixelsPlacedToday: number;
-  pixelsRemaining: number;
-  timeUntilNextPixel: number;
-  timeUntilDailyReset: number;
-  totalPixelsPlaced: number;
-  boardDelay: number;
+interface VisitorBannerProps {
+  limits: VisitorLimits | null;
+  loading: boolean;
 }
 
-interface VisitorLimitsResponse {
-  success: boolean;
-  limits: VisitorLimits;
-  message: string;
-}
-
-export const VisitorBanner: React.FC = () => {
-  const [limits, setLimits] = useState<VisitorLimits | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+export const VisitorBanner: React.FC<VisitorBannerProps> = ({
+  limits,
+  loading,
+}) => {
   const [showBanner, setShowBanner] = useState<boolean>(false);
-  const { isLoggedIn } = useAuth();
 
-  const fetchVisitorLimits = () => {
-    setLoading(true);
-    apiService
-      .get<VisitorLimitsResponse>("/visitors/limits")
-      .then((data) => {
-        if (data.success) {
-          setLimits(data.limits);
-        } else {
-          console.error(
-            "Erreur lors de la récupération des limites:",
-            data.message,
-          );
-        }
-      })
-      .catch((error) => {
-        console.error("Erreur lors de la récupération des limites:", error);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  };
-
-  // Charger les limites au démarrage
   useEffect(() => {
-    fetchVisitorLimits();
-    // Rafraîchir les limites toutes les 5 secondes
-    const interval = setInterval(fetchVisitorLimits, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Si l'utilisateur est connecté, on ne montre pas la bannière
-  if (isLoggedIn) return null;
+    if (limits && limits.timeUntilNextPixel && limits.timeUntilNextPixel > 0) {
+      console.log("LIMITS UPDATED", limits);
+      setShowBanner(true);
+    }
+  }, [limits]);
 
   // Fonction pour formater le temps en minutes/secondes
   const formatTime = (seconds: number): string => {
     if (seconds <= 0) return "0s";
-    const minutes = Math.floor(seconds / 60);
+    const remaniningHours = Math.floor(seconds / 3600);
+    const remainingMinutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = Math.ceil(seconds % 60);
-
-    if (minutes > 0) {
-      return `${minutes}m ${remainingSeconds}s`;
-    }
-    return `${remainingSeconds}s`;
+    return `${remaniningHours > 0 ? remaniningHours + "h " : ""}${remainingMinutes > 0 ? remainingMinutes + "m " : ""}${remainingSeconds > 0 ? remainingSeconds + "s" : ""}`;
   };
 
   // Détermine si on a atteint la limite quotidienne
@@ -93,9 +52,9 @@ export const VisitorBanner: React.FC = () => {
       {/* Bouton flottant pour afficher la bannière */}
       <button
         onClick={() => setShowBanner(!showBanner)}
-        className={`fixed z-40 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-t-lg shadow-lg text-white text-sm font-medium flex items-center space-x-1 transition-all duration-200 
+        className={`fixed z-40 left-1/2 transform -translate-x-1/2 px-3 py-1 rounded-t-lg shadow-lg text-white text-sm font-medium flex items-center space-x-1 transition-all duration-200
                     ${getBannerColorClass()}
-                    ${showBanner ? "bottom-[120px]" : "bottom-0"}`}
+                    ${showBanner ? "bottom-22" : "bottom-0"}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -116,7 +75,7 @@ export const VisitorBanner: React.FC = () => {
       {/* Bannière détaillée */}
       {showBanner && limits && (
         <div
-          className={`fixed bottom-0 left-0 right-0 p-3 shadow-lg z-30 border-t text-white
+          className={`fixed bottom-0 left-0 right-0 p-3 shadow-lg z-30 border-t text-white h-22 rounded-t-lg transition-all duration-200
                     ${getBannerColorClass()}`}
         >
           <div className="container mx-auto">

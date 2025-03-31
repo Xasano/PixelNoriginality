@@ -5,6 +5,7 @@ import { Pixel } from "@interfaces/Pixel";
 import { apiService, isApiError } from "@/helpers/request";
 import { ReplayButton } from "./ReplayButton";
 import { websocketService } from "@/helpers/websocket";
+import { VisitorLimits } from "@/interfaces/VisitorLimits";
 
 interface BoardProps {
   pixelboardId: string;
@@ -15,6 +16,8 @@ interface BoardProps {
   pixels?: Pixel[];
   participationTimer: number;
   addParticipationDelay: (delay?: number) => void;
+  limits: VisitorLimits | null;
+  setLimits: React.Dispatch<React.SetStateAction<VisitorLimits | null>>;
 }
 
 export const Board = (props: BoardProps) => {
@@ -141,7 +144,8 @@ export const Board = (props: BoardProps) => {
       !canvasRef.current ||
       isLoading ||
       props.participationTimer > 0 ||
-      isReplaying
+      isReplaying ||
+      (props.limits && props.limits?.pixelsRemaining === 0)
     )
       return;
 

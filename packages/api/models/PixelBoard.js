@@ -1,4 +1,5 @@
 import mongoose, { Schema } from "mongoose";
+import { Contribution } from "./Contribution.js";
 
 const pixelSchema = new Schema({
   x: { type: Number, required: true },
@@ -127,7 +128,6 @@ pixelBoardSchema.methods.placePixel = async function (
     throw new Error("Ce pixel est déjà occupé");
   }
 
-  const Contribution = mongoose.model("Contribution");
   const contribution = new Contribution({
     user: userId,
     pixelBoard: this._id,

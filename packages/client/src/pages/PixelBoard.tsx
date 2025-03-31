@@ -8,6 +8,13 @@ import { IPixelBoard } from "@/interfaces/PixelBoard";
 import { apiService } from "@/helpers/request";
 import { useAuth } from "@hooks/useAuth";
 import { VisitorBanner } from "@components/pixelboard/VisitorBanner";
+import { VisitorLimits } from "@/interfaces/VisitorLimits";
+
+interface VisitorLimitsResponse {
+  success: boolean;
+  limits: VisitorLimits;
+  message: string;
+}
 
 export const PixelBoard = () => {
   const [selectedColor, setSelectedColor] = useState("#ff0000");
@@ -18,6 +25,7 @@ export const PixelBoard = () => {
   const [endDate, setEndDate] = useState<string>("");
   const [participationDelay, setParticipationDelay] = useState<number>(0);
   const [participationTimer, setParticipationTimer] = useState<number>(0);
+  const [limits, setLimits] = useState<VisitorLimits | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { id } = useParams();
   const { isLoggedIn } = useAuth();
@@ -27,7 +35,9 @@ export const PixelBoard = () => {
   useEffect(() => {
     if (!isLoggedIn && !visitorSessionCreated) {
       apiService
-        .post<{ success: boolean; visitorId: string }>("/visitors/session")
+        .post<{ success: boolean; visitorId: string }>("/visitors/session", {
+          pixelBoardId: id,
+        })
         .then((data) => {
           if (data.success) {
             setVisitorSessionCreated(true);
@@ -38,6 +48,26 @@ export const PixelBoard = () => {
         });
     }
   }, [isLoggedIn, visitorSessionCreated]);
+
+  useEffect(() => {
+    if (visitorSessionCreated) {
+      apiService
+        .get<VisitorLimitsResponse>("/visitors/limits")
+        .then((data) => {
+          if (data.success) {
+            setLimits(data.limits);
+          } else {
+            console.error(
+              "Erreur lors de la récupération des limites:",
+              data.message,
+            );
+          }
+        })
+        .catch((error) => {
+          console.error("Erreur lors de la récupération des limites:", error);
+        });
+    }
+  }, [visitorSessionCreated]);
 
   useEffect(() => {
     apiService
@@ -73,6 +103,7 @@ export const PixelBoard = () => {
           name={name}
           endDate={endDate}
           participationTimer={participationTimer}
+          limits={limits}
         />
         <div className="max-w-full flex-1 aspect-square flex flex-col bg-gray-200 dark:bg-gray-700 p-2.5 rounded-xl">
           <Board
@@ -84,15 +115,25 @@ export const PixelBoard = () => {
             pixels={pixels}
             participationTimer={participationTimer}
             addParticipationDelay={(delay?: number) => {
-              console.log("delay", delay);
+              if (limits) {
+                setLimits((prev) => ({
+                  ...prev!,
+                  pixelsRemaining: prev!.pixelsRemaining - 1,
+                  totalPixelsPlaced: prev!.totalPixelsPlaced + 1,
+                }));
+                setParticipationTimer(limits.boardDelay);
+                return;
+              }
               if (delay) setParticipationTimer(delay);
               else setParticipationTimer(participationDelay);
             }}
+            limits={limits}
+            setLimits={setLimits}
           />
         </div>
       </div>
       <ColorPicker onSelectedColorChange={setSelectedColor} />
-      {!isLoggedIn && <VisitorBanner />}
+      {!isLoggedIn && <VisitorBanner limits={limits} loading={isLoading} />}
     </div>
   );
 };

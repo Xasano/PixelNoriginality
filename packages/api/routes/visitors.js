@@ -5,8 +5,8 @@ import {
   clearVisitorSession,
   getVisitorSessionInfo,
 } from "../services/sessionService.js";
+import { PixelBoard } from "../models/PixelBoard.js";
 import { authenticateVisitor } from "../middleware/visitorAuth.js";
-import mongoose from "mongoose";
 import { migrateVisitorToUser } from "../services/visitorMigrationService.js";
 import bcrypt from "bcrypt";
 import { User } from "../models/User.js";
@@ -43,7 +43,7 @@ visitorRouter.post("/session", async (req, res, next) => {
     }
 
     // Créer une nouvelle session visiteur
-    const visitorId = await createVisitorSession(res);
+    const visitorId = await createVisitorSession(res, req.body.pixelBoardId);
 
     res.status(201).json({
       success: true,
@@ -131,7 +131,6 @@ visitorRouter.get("/limits", async (req, res, next) => {
     let boardDelay = 60; // Délai par défaut en secondes
     if (lastPixelBoardId) {
       try {
-        const PixelBoard = mongoose.model("PixelBoard");
         const pixelBoard = await PixelBoard.findById(lastPixelBoardId);
         if (pixelBoard && pixelBoard.participationDelay) {
           boardDelay = pixelBoard.participationDelay;

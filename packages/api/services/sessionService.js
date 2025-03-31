@@ -2,9 +2,10 @@ import { Visitor } from "../models/Visitor.js";
 
 const SESSION_DURATION = 7 * 24 * 60 * 60 * 1000; // 7 jours en ms
 
-export const createVisitorSession = async (res) => {
+export const createVisitorSession = async (res, pixelBoardId) => {
   // Génère un nouvel identifiant de visiteur
   const visitor = new Visitor();
+  visitor.lastPixelBoardId = pixelBoardId;
   await visitor.save();
   // Définir le cookie pour le visiteur
   setVisitorCookie(res, visitor.visitorId);

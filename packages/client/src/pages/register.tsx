@@ -44,16 +44,14 @@ const Register = () => {
   useEffect(() => {
     const checkVisitorStatus = async () => {
       try {
-        const response = (await apiService.get(
-          "/visitors/session",
-        )) as VisitorSessionResponse;
+        const response =
+          await apiService.get<VisitorSessionResponse>("/visitors/session");
         if (response.success && response.authenticated) {
           setIsVisitor(true);
 
           // Récupérer les statistiques du visiteur
-          const statsResponse = (await apiService.get(
-            "/visitors/limits",
-          )) as VisitorLimitsResponse;
+          const statsResponse =
+            await apiService.get<VisitorLimitsResponse>("/visitors/limits");
           if (statsResponse.success) {
             setVisitorStats({
               pixelsPlacedToday: statsResponse.limits.pixelsPlacedToday || 0,
