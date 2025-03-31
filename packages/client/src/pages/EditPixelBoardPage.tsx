@@ -65,16 +65,17 @@ const EditPixelBoardPage: React.FC = () => {
 
   const handleEditPixelBoard = async (formData: PixelBoardFormData) => {
     try {
-      await apiService.put(`/pixel-boards/${id}`, formData, {
-        withCredentials: true,
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/json",
-        },
-      });
+      const response = await apiService.put<IPixelBoard>(
+        `/pixel-boards/${id}`,
+        formData,
+      );
 
       // Rediriger vers la page de détail du PixelBoard
-      navigate(`/pixel-board/${id}`);
+      if (response && response.status === "active") {
+        navigate(`/pixel-board/${id}`);
+      } else {
+        navigate(`/pixel-boards`);
+      }
     } catch (err) {
       if (isApiError(err)) {
         setError(
