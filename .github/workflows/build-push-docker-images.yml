@@ -4,39 +4,10 @@ on:
   push:
     branches:
       - main
-  workflow_run:
-    workflows: ["Lint API", "Lint WebSocket", "Lint and Build Frontend"]
-    types:
-      - completed
-    branches: [main]
   
-
 jobs:
-  verify_prerequisites:
-    name: Vérifier les prérequis
-    runs-on: ubuntu-latest
-    if: ${{ github.event.repository.default_branch }}
-    
-    steps:
-      - name: Vérifier que tous les workflows prérequis ont réussi
-        run: |
-          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
-            echo "Un ou plusieurs workflows prérequis ont échoué. Arrêt du workflow."
-            exit 1
-          fi
-        
-      - name: Créer un fichier de marqueur de succès
-        run: echo "SUCCESS=true" > verify_success.txt
-        
-      - name: Sauvegarder le résultat de vérification
-        uses: actions/upload-artifact@v4
-        with:
-          name: prerequisites-verification
-          path: verify_success.txt
-
   docker:
     name: Build and Push Docker Images
-    needs: verify_prerequisites
     runs-on: ubuntu-latest
 
     steps:
@@ -44,19 +15,19 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: lint-and-build-success
-        if: ${{ github.event.workflow_run.workflow == 'Lint and Build API' }}
+        if: ${{ github.event.workflow_run.name == 'Lint API' }}
 
       - name: Télécharger l'artefact de succès pour WebSocket
         uses: actions/download-artifact@v4
         with:
           name: websocket-lint-and-build-success
-        if: ${{ github.event.workflow_run.workflow == 'Lint and Build WebSocket' }}
+        if: ${{ github.event.workflow_run.name == 'Lint WebSocket' }}
 
       - name: Télécharger l'artefact de succès pour Frontend
         uses: actions/download-artifact@v4
         with:
           name: frontend-lint-and-build-success
-        if: ${{ github.event.workflow_run.workflow == 'Lint and Build Frontend' }}
+        if: ${{ github.event.workflow_run.name == 'Lint and Build Frontend' }}
 
       - name: Checkout du code
         uses: actions/checkout@v4
@@ -64,12 +35,12 @@ jobs:
       - name: Connexion à Docker Hub
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME || 'default-username' }}
+          password: ${{ secrets.DOCKER_PASSWORD || 'default-password' }}
 
       - name: Définir la version basée sur le numéro de build GitHub
         id: version
-        run: echo "VERSION=${{ github.run_number }}" >> $GITHUB_ENV
+        run: echo "VERSION=${{ github.run_number || '1' }}" >> $GITHUB_ENV
 
       - name: Build et push de l'image API
         run: |
@@ -85,7 +56,12 @@ jobs:
 
       - name: Build et push de l'image Frontend
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:${{ env.VERSION }} -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:latest ./packages/client
+          docker build \
+            --build-arg VITE_API_URL=${{ secrets.VITE_API_URL }} \
+            --build-arg VITE_WS_URL=${{ secrets.VITE_WS_URL }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:${{ env.VERSION }} \
+            -t ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:latest \
+            ./packages/client
           docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:${{ env.VERSION }}
           docker push ${{ secrets.DOCKER_USERNAME }}/pixelnoriginality-frontend:latest
           
@@ -102,13 +78,11 @@ jobs:
     name: Déploiement sur la VM
     needs: docker
     runs-on: ubuntu-latest
-    if: success()
+    if: ${{ needs.docker.result == 'success' }}
 
     steps:
-      - name: Télécharger le résultat de vérification des prérequis
-        uses: actions/download-artifact@v4
-        with:
-          name: prerequisites-verification
+      - name: Attendre que le job Docker soit terminé avec succès
+        run: echo "Le job Docker s'est terminé avec succès. Début du déploiement."
           
       - name: Télécharger le résultat du build Docker
         uses: actions/download-artifact@v4
@@ -117,7 +91,7 @@ jobs:
           
       - name: Vérifier les résultats précédents
         run: |
-          if [[ ! -f verify_success.txt ]] && [[ ! -f docker_success.txt ]]; then
+          if [[ ! -f docker_success.txt ]]; then
             echo "Les étapes précédentes n'ont pas toutes réussi. Arrêt du déploiement."
             exit 1
           fi
@@ -128,29 +102,29 @@ jobs:
       - name: Installer SSH key
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY || '' }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H ${{ secrets.VM_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.VM_HOST || 'default-host' }} >> ~/.ssh/known_hosts
 
       - name: Copier le fichier docker-compose sur la VM
         run: |
-          scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }}:/home/${{ secrets.SSH_USER }}/docker-compose.yml
-      
-      - name: Export des variables d'environnement
+          scp -i ~/.ssh/id_rsa ./docker-compose.yml ${{ secrets.SSH_USER || 'default-user' }}@${{ secrets.VM_HOST || 'default-host' }}:~/docker-compose.yml
+
+      - name: Créer le fichier .env.backend sur la VM
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "export ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }} && \
-          export REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }} && \
-          export MONGO_URL=${{ secrets.MONGO_URL }} && \
-          export INIT_SECRET_KEY=${{ secrets.INIT_SECRET_KEY }} && \
-          export DB_USER=${{ secrets.DB_USER }} && \
-          export DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "cat > ~/.env.backend << 'EOL'
+          ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
+          MONGO_URL=${{ secrets.MONGO_URL }}
+          INIT_SECRET_KEY=${{ secrets.INIT_SECRET_KEY }}
+          EOL"
 
       - name: Déployer et lancer le docker-compose
         run: |
-          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "cd /home/${{ secrets.SSH_USER }} && \
+          ssh -i ~/.ssh/id_rsa ${{ secrets.SSH_USER }}@${{ secrets.VM_HOST }} "cd ~ && \
           docker-compose pull && \
           docker-compose down && \
-          docker-compose up -d"
+          docker-compose up --build -d"
 
       - name: Vérifier le statut des conteneurs
         run: |

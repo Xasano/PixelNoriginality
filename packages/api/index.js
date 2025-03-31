@@ -28,6 +28,7 @@ app.use(
       "http://localhost",
       "http://localhost:80",
       "http://localhost:3000",
+      "https://pixelnoriginality.fun",
     ],
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

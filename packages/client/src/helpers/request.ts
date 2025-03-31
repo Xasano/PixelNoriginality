@@ -6,7 +6,7 @@ import axios, {
 } from "axios";
 
 // Config
-const API_URL = "http://localhost:8000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 const REFRESH_ENDPOINT = "/auth/refresh";
 
 // Interface étendue pour ajouter la propriété _retry
