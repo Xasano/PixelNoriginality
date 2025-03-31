@@ -1,14 +1,12 @@
 import { User } from "../interfaces/User";
 import { apiService, isApiError } from "./request";
 
-const API_BASE_URL = "http://localhost:8000/api";
-
 class AuthService {
   // Fonction de connexion
   static async login(email: string, password: string) {
     try {
       // Appel à l'API de connexion
-      await apiService.post(`${API_BASE_URL}/auth/login`, { email, password });
+      await apiService.post(`/auth/login`, { email, password });
 
       // Marquer l'utilisateur comme connecté
       localStorage.setItem("isLoggedIn", "true");
