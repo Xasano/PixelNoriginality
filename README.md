@@ -87,7 +87,6 @@ L'application permet aux visiteurs de:
   
   Développement backend et temps réel : 
     - Mise en place du système WebSocket pour les mises à jour en temps réel
-    - Configuration d'un serveur Bun pour les communications temps réel
     - Création du système de validation des actions utilisateurs
     - Creation systeme de recupération de mots de passe 
   
@@ -138,7 +137,19 @@ L'application permet aux visiteurs de:
 - Docker et Docker Compose
 - Git
 
-## Variables d'environnement
+## Variables d'environnement sans docker compose
+
+Créez un fichier `.env` dans le répertoire `packages/api` afin de pouvoir lancer en local en vous basant sur l'exemple fourni:
+
+**packages/api/.env** si les services sont lancés sans le docker compose
+```
+ACCESS_TOKEN_SECRET=mbdsgroupetrois
+REFRESH_TOKEN_SECRET=mbdsgroupetrois
+MONGO_URL=mongodb://root:root@localhost:27017
+INIT_SECRET_KEY=pixelnoriginality_admin_init_2025
+```
+
+## Variables d'environnement avec docker compose
 
 Créez un fichier `.env` dans le répertoire `packages/api` afin de pouvoir lancer en local en vous basant sur l'exemple fourni:
 
@@ -167,7 +178,7 @@ npm install
 ### 3. Lancer la base de données MongoDB avec Docker
 
 ```bash
-docker-compose up -d mongodb-pixelnoriginality
+docker-compose -f "docker-compose-dev.yml" up -d mongodb-pixelnoriginality
 ```
 
 ### 4. Lancer le serveur WebSocket
@@ -198,7 +209,9 @@ git clone https://github.com/Xasano/PixelNoriginality.git
 cd PixelNoriginality
 ```
 
-### 2. Lancer l'application avec Docker Compose
+### 2
+
+### 3. Lancer l'application avec Docker Compose
 
 ```bash
 docker compose -f docker-compose-dev.yml up --build -d
