@@ -209,9 +209,7 @@ git clone https://github.com/Xasano/PixelNoriginality.git
 cd PixelNoriginality
 ```
 
-### 2
-
-### 3. Lancer l'application avec Docker Compose
+### 2. Lancer l'application avec Docker Compose
 
 ```bash
 docker compose -f docker-compose-dev.yml up --build -d
