@@ -155,10 +155,10 @@ export const Board = (props: BoardProps) => {
 
     // Conversion en coordonnées de pixel
     const pixelX = Math.floor(
-      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current),
+      (mouseX - offsetRef.current.x) / (pixelSize * scaleRef.current)
     );
     const pixelY = Math.floor(
-      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current),
+      (mouseY - offsetRef.current.y) / (pixelSize * scaleRef.current)
     );
 
     // Vérifier si le pixel est dans les limites du tableau
@@ -169,11 +169,13 @@ export const Board = (props: BoardProps) => {
       pixelY >= props.height
     ) {
       console.log(
-        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
+        `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`
       );
-
       return;
     }
+
+    // Create timestamp BEFORE API call to ensure consistency
+    const currentTimestamp = new Date().toISOString();
 
     try {
       await apiService.post(
@@ -182,7 +184,7 @@ export const Board = (props: BoardProps) => {
           x: pixelX,
           y: pixelY,
           color: selectedColor,
-        }),
+        })
       );
 
       websocketService.sendMessage(
@@ -192,7 +194,7 @@ export const Board = (props: BoardProps) => {
           x: pixelX,
           y: pixelY,
           color: selectedColor,
-        }),
+        })
       );
     } catch (err) {
       console.error(err);
@@ -219,6 +221,15 @@ export const Board = (props: BoardProps) => {
     const relativeY = pixelY - chunkY * visibleChunkSize;
     const pixelKey = `${relativeX},${relativeY}`;
 
+    // Nouveau pixel avec timestamp cohérent
+    const newPixel = {
+      color: selectedColor,
+      x: pixelX,
+      y: pixelY,
+      placedBy: user?._id ? user._id : "anonymous user",
+      placedAt: currentTimestamp,
+    };
+
     // Mise à jour du pixel
     setPixelData((prevData) => {
       const newData = { ...prevData };
@@ -232,26 +243,29 @@ export const Board = (props: BoardProps) => {
         newData[chunkKey].pixels = {};
       }
 
-      // Création ou mise à jour du pixel
-      newData[chunkKey].pixels[pixelKey] = {
-        color: selectedColor,
-        x: pixelX,
-        y: pixelY,
-        placedBy: user?._id ? user._id : "anonymous user",
-        placedAt: new Date().toISOString(),
-      };
+      // Mise à jour du pixel
+      newData[chunkKey].pixels[pixelKey] = newPixel;
 
       console.log(
-        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
+        `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`
       );
 
       return newData;
     });
-    setTimeout(() => {
-      if (!isReplaying) {
-        prepareReplayPixels();
-      }
-    }, 50);
+
+    // Add the new pixel to the replay pixels array if not replaying
+    if (!isReplaying) {
+      // Add the new pixel to the replay array and re-sort
+      const updatedReplayPixels = [...replayPixelsRef.current, newPixel].sort(
+        (a, b) => {
+          const dateA = new Date(a.placedAt || 0).getTime();
+          const dateB = new Date(b.placedAt || 0).getTime();
+          return dateA - dateB;
+        }
+      );
+
+      replayPixelsRef.current = updatedReplayPixels;
+    }
   };
 
   // Gestion des événements de redimensionnement, focus et visibilité
@@ -278,7 +292,7 @@ export const Board = (props: BoardProps) => {
         const minY = Math.floor(-offsetRef.current.y / scaledPixelSize);
         const maxX = Math.ceil((width - offsetRef.current.x) / scaledPixelSize);
         const maxY = Math.ceil(
-          (height - offsetRef.current.y) / scaledPixelSize,
+          (height - offsetRef.current.y) / scaledPixelSize
         );
 
         setViewport({ width, height, minX, minY, maxX, maxY });
@@ -362,11 +376,11 @@ export const Board = (props: BoardProps) => {
         window.removeEventListener("focus", handleVisibilityOrFocus);
         document.removeEventListener(
           "visibilitychange",
-          handleVisibilityChange,
+          handleVisibilityChange
         );
         document.removeEventListener(
           "visibilitychange",
-          handleVisibilityOrFocus,
+          handleVisibilityOrFocus
         );
 
         if (animationFrameIdRef.current) {
@@ -809,7 +823,8 @@ export const Board = (props: BoardProps) => {
       for (const pixelKey in chunk.pixels) {
         const pixel = chunk.pixels[pixelKey];
         if (pixel && pixel.placedAt) {
-          allPixels.push(pixel);
+          // Create a new object to avoid reference issues
+          allPixels.push({ ...pixel });
         }
       }
     }
@@ -817,21 +832,27 @@ export const Board = (props: BoardProps) => {
     // Ajouter les pixels du serveur s'ils ne sont pas déjà dans la liste
     if (pixels && pixels.length > 0) {
       pixels.forEach((pixel) => {
-        if (
-          !allPixels.some(
-            (p) =>
-              p.x === pixel.x &&
-              p.y === pixel.y &&
-              p.placedAt === pixel.placedAt,
-          )
-        ) {
-          allPixels.push(pixel);
+        const exists = allPixels.some(
+          (p) =>
+            p.x === pixel.x && p.y === pixel.y && p.placedAt === pixel.placedAt
+        );
+
+        if (!exists) {
+          // Create a new object to avoid reference issues
+          allPixels.push({ ...pixel });
         }
       });
     }
 
+    // Ensure all pixels have valid timestamps
+    allPixels.forEach((pixel) => {
+      if (!pixel.placedAt) {
+        pixel.placedAt = new Date().toISOString();
+      }
+    });
+
     // Trier par date de placement
-    const sortedPixels = [...allPixels].sort((a, b) => {
+    const sortedPixels = allPixels.sort((a, b) => {
       const dateA = new Date(a.placedAt || 0).getTime();
       const dateB = new Date(b.placedAt || 0).getTime();
       return dateA - dateB;
@@ -868,7 +889,7 @@ export const Board = (props: BoardProps) => {
       // Continuer l'animation
       animationFrameRef.current = requestAnimationFrame(animateReplay);
     },
-    [isReplaying, currentReplayIndex, replaySpeed, addReplayPixel],
+    [isReplaying, currentReplayIndex, replaySpeed, addReplayPixel]
   );
 
   // Fonction pour démarrer le replay
@@ -883,8 +904,17 @@ export const Board = (props: BoardProps) => {
     }
 
     console.log(
-      `Démarrage du replay avec ${replayPixelsRef.current.length} pixels`,
+      `Démarrage du replay avec ${replayPixelsRef.current.length} pixels`
     );
+
+    // Log some sample timestamps for debugging
+    if (replayPixelsRef.current.length > 0) {
+      const samples = Math.min(5, replayPixelsRef.current.length);
+      console.log("Sample timestamps:");
+      for (let i = 0; i < samples; i++) {
+        console.log(`Pixel ${i}: ${replayPixelsRef.current[i].placedAt}`);
+      }
+    }
 
     // Nettoyer le canvas
     clearCanvas();
@@ -1082,7 +1112,7 @@ export const Board = (props: BoardProps) => {
       const touch2 = e.touches[1];
       const initialDistance = Math.hypot(
         touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY,
+        touch2.clientY - touch1.clientY
       );
 
       // Stocker la distance initiale et le scale actuel
@@ -1127,7 +1157,7 @@ export const Board = (props: BoardProps) => {
       // Calculer la nouvelle distance
       const currentDistance = Math.hypot(
         touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY,
+        touch2.clientY - touch1.clientY
       );
 
       // Le ratio de zoom
@@ -1137,7 +1167,7 @@ export const Board = (props: BoardProps) => {
       const minScale = calculateMinimumScale();
       const newScale = Math.max(
         minScale,
-        Math.min(10, lastPinchScale.current * pinchRatio),
+        Math.min(10, lastPinchScale.current * pinchRatio)
       );
 
       if (newScale !== scale) {
@@ -1250,7 +1280,7 @@ export const Board = (props: BoardProps) => {
             colorGroups[pixel.color] = [];
           }
           colorGroups[pixel.color].push(
-            `<rect x="${pixel.x}" y="${pixel.y}" width="1" height="1"/>`,
+            `<rect x="${pixel.x}" y="${pixel.y}" width="1" height="1"/>`
           );
         }
 
