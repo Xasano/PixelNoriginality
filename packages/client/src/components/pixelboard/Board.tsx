@@ -171,9 +171,11 @@ export const Board = (props: BoardProps) => {
       console.log(
         `Pixel (${pixelX}, ${pixelY}) en dehors des limites du tableau`,
       );
-
       return;
     }
+
+    // Create timestamp BEFORE API call to ensure consistency
+    const currentTimestamp = new Date().toISOString();
 
     try {
       await apiService.post(
@@ -219,6 +221,15 @@ export const Board = (props: BoardProps) => {
     const relativeY = pixelY - chunkY * visibleChunkSize;
     const pixelKey = `${relativeX},${relativeY}`;
 
+    // Nouveau pixel avec timestamp cohérent
+    const newPixel = {
+      color: selectedColor,
+      x: pixelX,
+      y: pixelY,
+      placedBy: user?._id ? user._id : "anonymous user",
+      placedAt: currentTimestamp,
+    };
+
     // Mise à jour du pixel
     setPixelData((prevData) => {
       const newData = { ...prevData };
@@ -232,14 +243,8 @@ export const Board = (props: BoardProps) => {
         newData[chunkKey].pixels = {};
       }
 
-      // Création ou mise à jour du pixel
-      newData[chunkKey].pixels[pixelKey] = {
-        color: selectedColor,
-        x: pixelX,
-        y: pixelY,
-        placedBy: user?._id ? user._id : "anonymous user",
-        placedAt: new Date().toISOString(),
-      };
+      // Mise à jour du pixel
+      newData[chunkKey].pixels[pixelKey] = newPixel;
 
       console.log(
         `Pixel set at (${pixelX}, ${pixelY}) with color ${selectedColor}`,
@@ -247,11 +252,20 @@ export const Board = (props: BoardProps) => {
 
       return newData;
     });
-    setTimeout(() => {
-      if (!isReplaying) {
-        prepareReplayPixels();
-      }
-    }, 50);
+
+    // Add the new pixel to the replay pixels array if not replaying
+    if (!isReplaying) {
+      // Add the new pixel to the replay array and re-sort
+      const updatedReplayPixels = [...replayPixelsRef.current, newPixel].sort(
+        (a, b) => {
+          const dateA = new Date(a.placedAt || 0).getTime();
+          const dateB = new Date(b.placedAt || 0).getTime();
+          return dateA - dateB;
+        },
+      );
+
+      replayPixelsRef.current = updatedReplayPixels;
+    }
   };
 
   // Gestion des événements de redimensionnement, focus et visibilité
@@ -809,7 +823,8 @@ export const Board = (props: BoardProps) => {
       for (const pixelKey in chunk.pixels) {
         const pixel = chunk.pixels[pixelKey];
         if (pixel && pixel.placedAt) {
-          allPixels.push(pixel);
+          // Create a new object to avoid reference issues
+          allPixels.push({ ...pixel });
         }
       }
     }
@@ -817,21 +832,27 @@ export const Board = (props: BoardProps) => {
     // Ajouter les pixels du serveur s'ils ne sont pas déjà dans la liste
     if (pixels && pixels.length > 0) {
       pixels.forEach((pixel) => {
-        if (
-          !allPixels.some(
-            (p) =>
-              p.x === pixel.x &&
-              p.y === pixel.y &&
-              p.placedAt === pixel.placedAt,
-          )
-        ) {
-          allPixels.push(pixel);
+        const exists = allPixels.some(
+          (p) =>
+            p.x === pixel.x && p.y === pixel.y && p.placedAt === pixel.placedAt,
+        );
+
+        if (!exists) {
+          // Create a new object to avoid reference issues
+          allPixels.push({ ...pixel });
         }
       });
     }
 
+    // Ensure all pixels have valid timestamps
+    allPixels.forEach((pixel) => {
+      if (!pixel.placedAt) {
+        pixel.placedAt = new Date().toISOString();
+      }
+    });
+
     // Trier par date de placement
-    const sortedPixels = [...allPixels].sort((a, b) => {
+    const sortedPixels = allPixels.sort((a, b) => {
       const dateA = new Date(a.placedAt || 0).getTime();
       const dateB = new Date(b.placedAt || 0).getTime();
       return dateA - dateB;
@@ -885,6 +906,15 @@ export const Board = (props: BoardProps) => {
     console.log(
       `Démarrage du replay avec ${replayPixelsRef.current.length} pixels`,
     );
+
+    // Log some sample timestamps for debugging
+    if (replayPixelsRef.current.length > 0) {
+      const samples = Math.min(5, replayPixelsRef.current.length);
+      console.log("Sample timestamps:");
+      for (let i = 0; i < samples; i++) {
+        console.log(`Pixel ${i}: ${replayPixelsRef.current[i].placedAt}`);
+      }
+    }
 
     // Nettoyer le canvas
     clearCanvas();

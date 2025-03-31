@@ -33,21 +33,28 @@ export const PixelBoard = () => {
 
   // Création de session visiteur si nécessaire
   useEffect(() => {
-    if (!isLoggedIn && !visitorSessionCreated) {
-      apiService
-        .post<{ success: boolean; visitorId: string }>("/visitors/session", {
-          pixelBoardId: id,
-        })
-        .then((data) => {
-          if (data.success) {
-            setVisitorSessionCreated(true);
-          }
-        })
-        .catch((err) => {
-          console.error("Erreur de création de session visiteur:", err);
-        });
-    }
-  }, [isLoggedIn, visitorSessionCreated]);
+    const timeout = setTimeout(() => {
+      console.log("isLoggedIn", isLoggedIn);
+      if (!id && !isLoggedIn && !visitorSessionCreated) {
+        apiService
+          .post<{ success: boolean; visitorId: string }>("/visitors/session", {
+            pixelBoardId: id,
+          })
+          .then((data) => {
+            if (data.success) {
+              setVisitorSessionCreated(true);
+            }
+          })
+          .catch((err) => {
+            console.error("Erreur de création de session visiteur:", err);
+          });
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [id, isLoggedIn, visitorSessionCreated]);
 
   useEffect(() => {
     if (visitorSessionCreated) {
