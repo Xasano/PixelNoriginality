@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "@components/provider/AuthProvider";
 import { PixelBoard } from "./pages/PixelBoard";
 import FinishedPixelBoardsPage from "./pages/FinishedPixelBoardsPage";
+import NotFound from "./pages/NotFound";
 
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter>
@@ -76,6 +77,7 @@ createRoot(document.getElementById("root")!).render(
             }
           />
           <Route path="/unauthorized" element={<Unauthorized />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </AuthProvider>
