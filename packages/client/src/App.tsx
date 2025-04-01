@@ -60,10 +60,10 @@ function App() {
           animateValue(0, data.userCount, 1000, (val) =>
             setStats((prev) => ({ ...prev, nbUsers: val })),
           );
-          animateValue(0, data.pixelBoardCount, 1500, (val) =>
+          animateValue(0, data.pixelBoardCount, 1000, (val) =>
             setStats((prev) => ({ ...prev, nbPixelBoards: val })),
           );
-          animateValue(0, data.contributionCount, 2000, (val) =>
+          animateValue(0, data.contributionCount, 1000, (val) =>
             setStats((prev) => ({ ...prev, nbContributions: val })),
           );
         }, 300);

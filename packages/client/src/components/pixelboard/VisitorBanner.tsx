@@ -73,10 +73,10 @@ export const VisitorBanner: React.FC<VisitorBannerProps> = ({
       </button>
 
       {/* Bannière détaillée */}
-      {showBanner && limits && (
+      {limits && (
         <div
-          className={`fixed bottom-0 left-0 right-0 p-3 shadow-lg z-30 border-t text-white h-22 rounded-t-lg transition-all duration-200
-                    ${getBannerColorClass()}`}
+          className={`fixed left-0 right-0 p-3 shadow-lg z-30 border-t text-white h-22 rounded-t-lg transition-all duration-200
+                    ${getBannerColorClass()} ${showBanner ? "bottom-0" : "-bottom-22"}`}
         >
           <div className="container mx-auto">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-2">
