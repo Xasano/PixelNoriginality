@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { NavLink } from "react-router";
+import { NavLink, useNavigate } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import "@/index.css";
 import { IPixelBoard } from "@interfaces/PixelBoard";
@@ -12,6 +12,7 @@ const ActivePixelBoards3DCarousel = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchActivePixelBoards = async () => {
@@ -203,6 +204,8 @@ const ActivePixelBoards3DCarousel = () => {
                       onClick={() => {
                         if (position !== "center") {
                           goToSlide(index);
+                        } else {
+                          navigate("/pixel-board/" + board._id);
                         }
                       }}
                     >
