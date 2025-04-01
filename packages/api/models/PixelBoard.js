@@ -145,7 +145,7 @@ pixelBoardSchema.methods.placePixel = async function (
   const User = mongoose.model("User");
   await User.findByIdAndUpdate(userId, {
     $push: { contributions: contribution._id },
-    $inc: { "stats.pixelPainted": 1, "stats.pixelBoardsParticipated": 1 },
+    $inc: { "stats.pixelPainted": 1 },
     $set: { "stats.lastPixelTouched": new Date() },
   });
 
