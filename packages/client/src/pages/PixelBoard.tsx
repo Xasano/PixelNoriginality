@@ -35,7 +35,8 @@ export const PixelBoard = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       console.log("isLoggedIn", isLoggedIn);
-      if (!id && !isLoggedIn && !visitorSessionCreated) {
+      console.log("visitorSessionCreated", visitorSessionCreated);
+      if (id && !isLoggedIn && !visitorSessionCreated) {
         apiService
           .post<{ success: boolean; visitorId: string }>("/visitors/session", {
             pixelBoardId: id,
